@@ -4,9 +4,9 @@ import numpy as np
 from colors import *
 
 class Ray:
-    def __init__(this, startPos, endPos, distance):
+    def __init__(this, startPos, angle, distance):
         this.startPos = startPos
-        this.endPos = endPos
+        this.angle = angle
         this.distance = distance
 
 def CastRay(startPos, endPos):

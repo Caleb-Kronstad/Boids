@@ -6,26 +6,31 @@ from colors import *
 from ray import *
 
 class Bird:
-    def __init__(this, position, size, color, speed, direction, viewRange):
+    def __init__(this, image, position, size, color, speed, angle, viewRange):
         this.position = position
+        this.image = image
         this.size = size
         this.color = color
         this.speed = speed
-        this.direction = direction
+        this.angle = angle
         this.viewRange = viewRange
 
-    def StepPosition(this):
+    def Move(this):
+        this.direction = np.array([np.cos(this.angle), np.sin(this.angle)])
         this.position = this.position + (this.direction * this.speed)
 
         #Don't let the birds go off the screen
         if (this.position[0] >= 1600):
             this.position = np.array([0, this.position[1]])
-        elif (this.position[0] <= 0):
+        elif (this.position[0] <= 0 - this.size[0]):
             this.position = np.array([1600, this.position[1]])
         elif (this.position[1] >= 900):
             this.position = np.array([this.position[0], 0])
-        elif (this.position[1] <= 0):
+        elif (this.position[1] <= 0 - this.size[1]):
             this.position = np.array([this.position[0], 900])
+
+    def Rotate(this, angle):
+        this.angle = angle
 
     def CheckCollision(this, other):
         collisionX = (this.position[0] + this.size[0] >= other.position[0] and other.position[0] + other.size[0] >= this.position[0])
@@ -45,5 +50,4 @@ class Bird:
         this.speed = newSpeed
 
     def Update(this, window):
-        rect = py.Rect(this.position[0], this.position[1], this.size[0], this.size[1])
-        py.draw.rect(window, this.color, rect)
+        window.blit(this.image, (this.position[0], this.position[1]))
