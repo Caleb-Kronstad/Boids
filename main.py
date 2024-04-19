@@ -1,5 +1,10 @@
+##--- TEMPORARY CITATIONS ---
+# https://www.cs.trinity.edu/~jhowland/cs2322/2d/2d/
+##---
+
 #import libraries to be used
 import pygame as py
+from pygame import Vector2 as Vec2
 import numpy as np
 import random
 
@@ -22,22 +27,23 @@ clock = py.time.Clock()
 FPS = 60
 
 boid_img = py.image.load('resources/bird.png')
+square_img = py.Surface((25,25), py.SRCALPHA)
+square_img.fill(CYAN)
 
-boids_list = []
+main_flock = []
 for i in range(5):
-    boidPosition = np.array([random.randint(0,screen_width),random.randint(0,screen_height)])
-    boidSpeed = np.array([3, 3])
-    boidSize = np.array([15,15])
-    boidRange = 50 #boid's view range, how far it can see in front of itself
+    pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height))
+    size = Vec2(square_img.get_size())
+    
+    velArr = np.array([random.uniform(-1,1), random.uniform(-1,1)])
+    velNorm = np.linalg.norm(velArr)
+    velHat = velArr / velNorm
+    vel = Vec2(velHat[0], velHat[1])
 
-    boidDirection = np.array([random.uniform(-1,1),random.uniform(-1,1)])
-    boidDirectionNorm = np.linalg.norm(boidDirection)
-    boidDirectionHat = boidDirection / boidDirectionNorm
-
-    boidRay = Ray(boidPosition, boidDirection, 50) #ray position, direction, distance
-
-    boid = Boid(boid_img, boidPosition, boidSize, boidDirectionHat, boidSpeed, boidRange, boidRay)
-    boids_list.append(boid)
+    ray = Ray(pos, vel, 50)
+    
+    boid = Boid(pos, vel, size, square_img, ray)
+    main_flock.append(boid)
 
 def RepulsiveForce(pos1, pos2):
     r = pos2 - pos1
@@ -53,32 +59,13 @@ while running:
         if e.type == py.QUIT: running = False
 
     window.fill(DARKGRAY)
-    for boid in boids_list:
-            
-        close_boids = []
-        for boid_2 in boids_list:
-            dist = np.sqrt((boid_2.position[0] - boid.position[0])**2 + (boid_2.position[1] - boid.position[1])**2)
-            if (dist < boid.viewRange):
-                close_boids.append(boid_2)
-                #py.draw.line(window, RED, boid.position, boid_2.position, 1) ## only for debugging -- draws a line between boids that are near eachother
-
-        repulsiveForce = np.array([0,0])
-        for boid_near in close_boids:
-            dir = boid.direction + RepulsiveForce(boid.position, boid_near.position) / len(close_boids)
-            dirNorm = np.linalg.norm(dir)
-            dirHat = dir / dirNorm
-
-            repulsiveForce = repulsiveForce + dirHat
-
-        repulsiveForceNorm = np.linalg.norm(repulsiveForce)
-        repulsiveForceHat = repulsiveForce / repulsiveForceNorm
-        
-        boid.direction = repulsiveForceHat
-
-        boid.Move()
-        boid.ray.Cast(boid.position + boid.size/2, boid.direction)
-        #boid.ray.Draw(window, width=5)
+    
+    for boid in main_flock:
+        boid.ApplyPhysics(Vec2(0,0))
+        boid.Rotate(0)
         boid.Draw(window)
+        boid.ray.pos = boid.pos
+        boid.ray.Draw(window, width=5)
 
     py.display.flip()
     clock.tick(FPS)

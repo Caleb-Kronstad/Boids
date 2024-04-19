@@ -1,44 +1,43 @@
-#import files
+#imports
 import pygame as py
+from pygame import Vector2 as Vec2
 import numpy as np
 from colors import *
 from ray import *
 
-#Boid class
 class Boid:
-    def __init__(this, image, position, size, direction, speed, viewRange, ray):
-        this.position = position
-        this.image = image
+    def __init__(this, pos, vel, size, img, ray, accl=Vec2(0,0), mass=1.0):
+        this.pos = pos
+        this.vel = vel
         this.size = size
-        this.direction = direction
-        this.speed = speed
-        this.viewRange = viewRange
+        this.accl = accl
+        this.mass = mass
+        
         this.ray = ray
-        this.rect = py.Rect(this.position[0], this.position[1], this.size[0], this.size[1])
+        this.img = img
+        this.savedImg = img
 
-    def Move(this):
-        this.position = this.position + (this.direction * this.speed)
+        this.rect = img.get_rect(center = this.pos)
 
-        this.rect = py.Rect(this.position[0], this.position[1], this.size[0], this.size[1])
-        this.ray.Cast(this.position + (this.size/2), this.direction)
+    def ApplyPhysics(this, forces):
+        this.accl = forces * this.mass
+        this.vel = this.vel + this.accl
+        this.pos = this.pos + this.vel
 
-        #Don't let the boids go off the screen
-        if (this.position[0] >= 1600):
-            this.direction = this.direction * -1
-        elif (this.position[0] <= 0 - this.size[0]):
-            this.direction = this.direction * -1
-        elif (this.position[1] >= 900):
-            this.direction = this.direction * -1
-        elif (this.position[1] <= 0 - this.size[1]):
-            this.direction = this.direction * -1
+        #prevent boid from going off screen
+        if (this.pos.x >= 1600):
+            this.pos = Vec2(0, this.pos.y)
+        elif (this.pos.x <= 0):
+            this.pos = Vec2(1600, this.pos.y)
+        if (this.pos.y >= 900):
+            this.pos = Vec2(this.pos.x, 0)
+        elif (this.pos.y <= 0):
+            this.pos = Vec2(this.pos.x, 900)
 
-    def CheckCollision(this, otherRect):
-        hasCollision = this.ray.rect.colliderect(otherRect)
-        return hasCollision
-
-    def ChangeSpeed(this, newSpeed = np.array([0,0])):
-        this.speed = newSpeed
+    def Rotate(this, angle): #rotates in degrees
+        angle = Vec2.angle_to(this.pos, this.pos + this.vel)
+        this.img = py.transform.rotate(this.savedImg, angle)
+        this.rect = this.img.get_rect(center = this.pos)
 
     def Draw(this, window):
-        py.draw.rect(window, CYAN, this.rect)
-        #window.blit(this.image, (this.position[0], this.position[1]))
+        window.blit(this.img, this.rect)
