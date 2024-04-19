@@ -1,5 +1,6 @@
 ##--- TEMPORARY CITATIONS ---
 # https://www.cs.trinity.edu/~jhowland/cs2322/2d/2d/
+# https://stackoverflow.com/questions/6247153/angle-from-2d-unit-vector
 ##---
 
 #import libraries to be used
@@ -40,7 +41,8 @@ for i in range(5):
     velHat = velArr / velNorm
     vel = Vec2(velHat[0], velHat[1])
 
-    ray = Ray(pos, vel, 50)
+    rayAngle = np.arctan2(vel.y, vel.x) # calculate the angle the ray is pointed in using the boid's velocity
+    ray = Ray(pos, rayAngle, 50)
     
     boid = Boid(pos, vel, size, square_img, ray)
     main_flock.append(boid)
@@ -65,7 +67,7 @@ while running:
         boid.Rotate(0)
         boid.Draw(window)
         boid.ray.pos = boid.pos
-        boid.ray.Draw(window, width=5)
+        boid.ray.Draw(window, width=3)
 
     py.display.flip()
     clock.tick(FPS)

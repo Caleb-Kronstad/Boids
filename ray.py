@@ -5,22 +5,12 @@ import numpy as np
 from colors import *
 
 class Ray:
-    def __init__(this, pos, direction, distance):
+    def __init__(this, pos, angle, distance):
         this.pos = pos
         this.distance = distance
-        this.direction = direction
+        this.angle = angle
 
-    def LookAt(this, x, y):
-        this.direction.x = x - this.pos.x
-        this.direction.y = y - this.pos.y
-
-        try:
-            div = (this.direction and this.direction.normalize())
-            this.direction.x /= div.x
-            this.direction.y /= div.y
-        except ZeroDivisionError:
-            this.direction.x = 1
-            this.direction.y = 0
+        this.direction = Vec2(np.cos(angle), np.sin(angle))
 
     def Draw(this, window, width=1):
         py.draw.line(window, RED, 
