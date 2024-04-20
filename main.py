@@ -21,43 +21,29 @@ py.init()
 screen_width, screen_height = 1600, 900
 py.display.set_caption("Boids")
 FULLSCREEN = False
-if (FULLSCREEN):
-    window = py.display.set_mode((0,0), py.FULLSCREEN)
-else:
-    window = py.display.set_mode((screen_width, screen_height))
+window = py.display.set_mode((screen_width, screen_height))
 
 running = True
 clock = py.time.Clock()
 FPS = 60
 
 boid_img = py.image.load('resources/circle_15px.png')
+arrow_img = py.image.load('resources/arrow.png')
 
-square_img = py.Surface((15,15), py.SRCALPHA)
-square_img.fill(CYAN)
+sections = {
+    0: { 0: {}, 1: {}, 2: {} },
+    1: { 0: {}, 1: {}, 2: {} },
+    2: { 0: {}, 1: {}, 2: {} },
+    3: { 0: {}, 1: {}, 2: {} }
+}
 
-main_flock = []
-for i in range(50):
+for i in range(100):
     pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height))
-    size = Vec2(square_img.get_size())
-    angle = random.uniform(-np.pi,np.pi)
-    speed = Vec2(5,5)
-    ray1 = Ray(pos, angle, 0, 100)
-    ray2 = Ray(pos, angle, np.pi/4, 100)
-    ray3 = Ray(pos, angle, -np.pi/4, 100)
-    rays = [ray1, ray2, ray3]
-    
-    boid = Boid_Old(pos, size, angle, speed, boid_img, rays)
-    main_flock.append(boid)
-    
-
-flock = []
-for i in range(50):
-    pos = Vec2(screen_width/2, screen_height/2)
     vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
-    accel = Vec2(0,0)
+    accel = Vec2(1,1)
     
     boid = Boid(pos, vel, accel, boid_img)
-    flock.append(boid)
+    sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
 
 while running:
     for e in py.event.get():
@@ -65,16 +51,13 @@ while running:
 
     window.fill(DARKGRAY)
 
-    for boid in flock:
-
-        #SteeringForce = BoidSteeringForce(boid, main_flock, 50, 500, 300, 35, 10, 1)
-        #NetForce = SteeringForce
-
-        #boid.ApplyPhysics(NetForce)
-        #boid.UpdateRotation(np.degrees(boid.expectedAngle))
-        
-        boid.Update()
-        boid.Draw(window)
+    for x in sections.keys():
+        for y in sections[x].keys():
+            for boid in sections[x][y].values():
+                boid.Flock(sections[x][y])
+                boid.Update()
+                sections = boid.UpdateSections(sections)
+                boid.Draw(window)
 
     py.display.flip()
     clock.tick(FPS)
