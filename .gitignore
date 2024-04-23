@@ -1,3 +1,4 @@
 #directories
 __pycache__/
 .dist/
+piskel_files/

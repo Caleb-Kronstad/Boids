@@ -4,6 +4,19 @@ from pygame import Vector2 as Vec2
 import numpy as np
 from colors import *
 
+# only for drawing the ray onto the screen, not for calculating anything
+class SimpleRay:
+    def __init__(this, pos, direction, distance):
+        this.pos = pos
+        this.direction = direction
+        this.distance = distance
+
+    def Draw(this, window, width=3, color=RED):
+        py.draw.line(window, color,
+                     (this.pos.x, this.pos.y), 
+                     (this.direction.x * this.distance + this.pos.x, this.direction.y * this.distance + this.pos.y),
+                     width)
+
 class Ray:
     def __init__(this, pos, angle, angle_offset=0, distance=100):
         this.pos = pos
@@ -29,6 +42,8 @@ class Ray:
                 return True
         return False
 
+# Fast method for getting line intersections :D
+# Gavin, 12/28/2009, stackoverflow.com. https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 def GetLineIntersection(p1, p2, p3, p4):
     s1 = Vec2(0,0)
     s1.x = p2.x - p1.x
