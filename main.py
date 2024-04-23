@@ -9,13 +9,14 @@
 import pygame as py
 from pygame import Vector2 as Vec2
 import numpy as np
-import random
+import random, sys
 
 #import other files
 from colors import *
 from boid import *
 from cache import *
 from ray import *
+from helpfunctions import *
 
 py.init()
 screen_width, screen_height = 1600, 900
@@ -41,7 +42,7 @@ ducky_medium_img = cache.LoadImage('resources/ducky_medium.png')
 ducky_large_img = cache.LoadImage('resources/ducky_large.png')
 
 water_bg_pos = -2700
-water_bg_speed = 5
+water_bg_speed = 0
 
 current_boid_img = ducky_small_img
 flock_params = FlockParams(50, 100, 200, 1, 1, 1)
@@ -61,12 +62,35 @@ for i in range(200):
     boid = Boid(pos, vel, accel, current_boid_img)
     sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
 
+input_force = Vec2(1,5)
+
 while 1:
     clock.tick(fps)
     fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, fps_font_color)
     
     for e in py.event.get():
-        if e.type == py.QUIT: break
+        if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): 
+            sys.exit()
+
+        #Get user input
+        if e.type == py.KEYDOWN:
+            key = e.key
+        if e.type == py.KEYUP:
+            key = e.key
+
+    #Key input
+    keys = py.key.get_pressed()
+
+    #Movement force based on WASD keys pressed
+    input_vector = Vec2(0,0)
+    if keys[py.K_w]:
+        input_vector.y -= input_force.y
+    if keys[py.K_s]:
+        input_vector.y += input_force.y
+    if keys[py.K_a]:
+        input_vector.x -= input_force.x
+    if keys[py.K_d]:
+        input_vector.x += input_force.x
 
     water_bg_pos += water_bg_speed
     if water_bg_pos > 0:
@@ -78,8 +102,9 @@ while 1:
         for y in sections[x].keys():
             for boid in sections[x][y].values():
                 
-                #Flock
+                #Add forces to boid
                 boid.Flock(sections[x][y])
+                boid.AddForce(input_vector)
 
                 #Update
                 boid.Update()
