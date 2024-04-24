@@ -9,7 +9,7 @@
 import pygame as py
 from pygame import Vector2 as Vec2
 import numpy as np
-import random, sys
+import random, sys, math
 
 #import other files
 from colors import *
@@ -49,7 +49,7 @@ def MainGame(game):
     ducky_large_img = cache.LoadImage('resources/ducky_large.png')
 
     bg_pos = -900
-    bg_speed = 0
+    bg_speed = 1
 
     current_boid_img = ducky_small_img
     flock_params = FlockParams(50, 100, 200, 15, 1, 1)
@@ -102,13 +102,27 @@ def MainGame(game):
             movement_vector.x -= movement_speed[0]
         if keys[py.K_d]:
             movement_vector.x += movement_speed[0]
+
         if movement_vector == Vec2(0,0): # check for staying still
-            flock.vel = Vec2(0,0)
-            bg_speed = -1
-        else:
-            bg_speed = movement_vector.y - 1
+            if flock.vel.y > 1:
+                flock.vel.y -= 0.1
+                if flock.vel.y < 1:
+                    flock.vel.y = 1
+            elif flock.vel.y < 1:
+                flock.vel.y += 0.1
+                if flock.vel.y > 1:
+                    flock.vel.y = 1
+
+            if flock.vel.x > 0:
+                flock.vel.x -= 0.1
+                if flock.vel.x < 0:
+                    flock.vel.x = 0
+            elif flock.vel.x < 1:
+                flock.vel.x += 0.1
+                if flock.vel.x > 1:
+                    flock.vel.x = 1
             
-        bg_pos -= bg_speed
+        bg_pos += bg_speed
         if bg_pos > 0:
             bg_pos = -900
         elif bg_pos < -900:
@@ -125,14 +139,10 @@ def MainGame(game):
                     if Normalize(flock.pos - boid.pos) < flock.range:
                         if not boid.in_flock:
                             boid.in_flock = True
-                            flock.num_boids += 1
 
                         boid.max_speed = flock.max_speed
                         boid.alignment_enabled = False
                     else:
-                        if boid.in_flock:
-                            boid.in_flock = False
-                            flock.num_boids -= 1
                         boid.max_speed = 4
                         boid.alignment_enabled = True
                         
@@ -163,7 +173,7 @@ def Menu(menu, game, performance_test):
     play_text = font_arial30.render("Play", True, BLACK)
 
     test_button = py.Rect(screen_width/2 - 100, screen_height/2, 200, 50)
-    test_text = font_arial30.render("Test Performance", True, BLACK)
+    test_text = font_arial30.render("Performance Test", True, BLACK)
 
     settings_button = py.Rect(screen_width/2 - 100, screen_height/2 + 100, 200, 50)
     settings_text = font_arial30.render("Settings", True, BLACK)
@@ -175,7 +185,7 @@ def Menu(menu, game, performance_test):
 
     while menu:
         clock.tick(fps)
-        window.fill(CYAN)
+        window.fill(WHITE)
 
         for e in py.event.get():
             if e.type == py.QUIT: 
@@ -197,10 +207,10 @@ def Menu(menu, game, performance_test):
                 elif settings_button.collidepoint(e.pos):
                     settings_open = True
 
-        py.draw.rect(window, WHITE, play_button)
-        py.draw.rect(window, WHITE, test_button)
-        py.draw.rect(window, WHITE, settings_button)
-        py.draw.rect(window, WHITE, exit_button)
+        py.draw.rect(window, CYAN, play_button)
+        py.draw.rect(window, CYAN, test_button)
+        py.draw.rect(window, CYAN, settings_button)
+        py.draw.rect(window, CYAN, exit_button)
         window.blit(play_text, (play_button.x, play_button.y))
         window.blit(test_text, (test_button.x, test_button.y))
         window.blit(settings_text, (settings_button.x, settings_button.y))
