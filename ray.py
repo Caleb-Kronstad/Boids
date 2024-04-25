@@ -43,7 +43,7 @@ class Ray:
         return False
 
 # Fast method for getting line intersections :D
-# Gavin, 12/28/2009, stackoverflow.com. https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+# Gavin, 12/28/2009, stackoverflow.com. https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect 4/21/2024
 def GetLineIntersection(p1, p2, p3, p4):
     s1 = Vec2(0,0)
     s1.x = p2.x - p1.x

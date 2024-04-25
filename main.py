@@ -1,8 +1,8 @@
 ##--- TEMPORARY CITATIONS ---
-# https://www.cs.trinity.edu/~jhowland/cs2322/2d/2d/
-# https://stackoverflow.com/questions/6247153/angle-from-2d-unit-vector
-# https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
-# https://www.youtube.com/watch?v=HzR-9tfOJQo
+# https://www.cs.trinity.edu/~jhowland/cs2322/2d/2d/ 4/18/2024
+# https://stackoverflow.com/questions/6247153/angle-from-2d-unit-vector 4/18/2024
+# https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect 4/20/2024
+# https://www.youtube.com/watch?v=HzR-9tfOJQo 4/20/2024
 ##---
 
 #import libraries to be used
@@ -38,6 +38,49 @@ font_arial30 = py.font.SysFont('Arial', 30)
 ## MAIN GAME
 
 def MainGame(game):
+    area_1 = { #x, y, width, height
+        "start" : [0, 0, 1600, 900], #start
+        "tutorial" : [-1000, -900, 2600, 900], #tutorial
+    }
+    area_2 = {
+        "hallway-1" : [0, -900, 600, 1800], #hallway
+        "puzzle-1" : [-5400, -3600, 6000, 2700], #puzzle
+        "cell-1" : [-6200, -4500, 1600, 1800], #cell
+        "hallway-2" : [600, -1800, 2000, 900], #hallway
+        "cell-2" : [1800, -2700, 1000, 1400], #cell
+        "hallway-3" : [600, -3600, 1200, 900] #hallway
+    }
+    area_3 = {
+        "hallway-1" : [0, -1800, 600, 2700],
+        "hallway-2" : [-800, -2700, 900, 2400],
+        "puzzle-1" : [-2600, -2700, 1800, 2700],
+        "puzzle-2" : [1600, -3100, 2000, 3100]
+    }
+    area_4 = {
+        "hallway-1" : [0, -900, 600, 900],
+        "puzzle-1" : [-3400, -2700, 4000, 1800]
+    }
+    area_5 = {
+        "hallway-1" : [0, 0, 600, 900],
+        "puzzle-1" : [-2000, -3000, 15000, 3000],
+        "hallway-2" : [9000, 0, 1000, 2700],
+        "hallway-3" : [4000, -2800, 4400, 600]
+    }
+    area_6 = {
+        "hallway-1" : [0, 0, 800, 3400],
+        "hallway-2" : [-4000, -2600, 4000, 900],
+        "puzzle-1" : [-300, -3400, 2700, 1200]
+    }
+
+    areas = {
+        1 : area_1,
+        2 : area_2,
+        3 : area_3,
+        4 : area_4,
+        5 : area_5,
+        6 : area_6
+    }
+
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
     circle_50px_img = cache.LoadImage('resources/circle_50px.png')
     blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
@@ -69,7 +112,7 @@ def MainGame(game):
         boid = Boid(pos, vel, accel, current_boid_img)
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
 
-    flock = Flock(sections[0][0], Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 3, 200, ducky_large_img)
+    flock = Flock(Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 3, 200, ducky_large_img)
     movement_vector = Vec2(0,0)
     movement_speed = [flock.max_speed, flock.max_speed]
 
@@ -102,25 +145,7 @@ def MainGame(game):
             movement_vector.x -= movement_speed[0]
         if keys[py.K_d]:
             movement_vector.x += movement_speed[0]
-
-        if movement_vector == Vec2(0,0): # check for staying still
-            if flock.vel.y > 1:
-                flock.vel.y -= 0.1
-                if flock.vel.y < 1:
-                    flock.vel.y = 1
-            elif flock.vel.y < 1:
-                flock.vel.y += 0.1
-                if flock.vel.y > 1:
-                    flock.vel.y = 1
-
-            if flock.vel.x > 0:
-                flock.vel.x -= 0.1
-                if flock.vel.x < 0:
-                    flock.vel.x = 0
-            elif flock.vel.x < 1:
-                flock.vel.x += 0.1
-                if flock.vel.x > 1:
-                    flock.vel.x = 1
+        flock.Movement(movement_vector)
             
         bg_pos += bg_speed
         if bg_pos > 0:
@@ -287,6 +312,7 @@ def PerformanceTest(performance_test):
         # Draw text
         window.blit(fps_text, (100, 50))
         window.blit(boid_count_text, (100, 100))
+        window.blit(add_boid_text, (100, 150))
         py.display.update()
 
 

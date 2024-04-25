@@ -8,8 +8,8 @@ from boid import *
 from helpfunctions import *
 
 class Flock:
-    def __init__(this, boids, pos, vel, max_speed, range, img, mass=1):
-        this.boids = boids
+    def __init__(this, pos, vel, max_speed, range, img, mass=1):
+        this.boids = {}
         this.pos = pos
         this.vel = LimitMagnitude(vel, max_speed)
         this.max_speed = max_speed
@@ -56,6 +56,26 @@ class Flock:
         new_pos += velocity
 
         return new_pos
+    
+    def Movement(this, movement_vector):
+        if movement_vector == Vec2(0,0): # check for staying still
+            if this.vel.y > 1:
+                this.vel.y -= 0.1
+                if this.vel.y < 1:
+                    this.vel.y = 1
+            elif this.vel.y < 1:
+                this.vel.y += 0.1
+                if this.vel.y > 1:
+                    this.vel.y = 1
+
+            if this.vel.x > 0:
+                this.vel.x -= 0.1
+                if this.vel.x < 0:
+                    this.vel.x = 0
+            elif this.vel.x < 1:
+                this.vel.x += 0.1
+                if this.vel.x > 1:
+                    this.vel.x = 1
 
     def Update(this):
         if this.forces != Vec2(0,0):
