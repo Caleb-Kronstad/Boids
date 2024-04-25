@@ -73,12 +73,12 @@ def MainGame(game):
     }
 
     areas = {
-        1 : area_1,
-        2 : area_2,
-        3 : area_3,
-        4 : area_4,
-        5 : area_5,
-        6 : area_6
+        0 : area_1,
+        1 : area_2,
+        2 : area_3,
+        3 : area_4,
+        4 : area_5,
+        5 : area_6
     }
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
@@ -90,9 +90,6 @@ def MainGame(game):
     ducky_small_img = cache.LoadImage('resources/ducky_small.png')
     ducky_medium_img = cache.LoadImage('resources/ducky_medium.png')
     ducky_large_img = cache.LoadImage('resources/ducky_large.png')
-
-    bg_pos = -900
-    bg_speed = 1
 
     current_boid_img = ducky_small_img
     flock_params = FlockParams(50, 100, 200, 15, 1, 1)
@@ -116,6 +113,8 @@ def MainGame(game):
     movement_vector = Vec2(0,0)
     movement_speed = [flock.max_speed, flock.max_speed]
 
+    flock_rect = flock.Draw(window)
+
     while game:
         clock.tick(fps)
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK)
@@ -137,23 +136,33 @@ def MainGame(game):
 
         #Movement force based on WASD keys pressed
         movement_vector = Vec2(0,0)
-        if keys[py.K_w]:
-            movement_vector.y -= movement_speed[1]
-        if keys[py.K_s]:
-            movement_vector.y += movement_speed[1]
-        if keys[py.K_a]:
-            movement_vector.x -= movement_speed[0]
-        if keys[py.K_d]:
-            movement_vector.x += movement_speed[0]
-        flock.Movement(movement_vector)
-            
-        bg_pos += bg_speed
-        if bg_pos > 0:
-            bg_pos = -900
-        elif bg_pos < -900:
-            bg_pos = 0
-        water_rect = window.blit(water_bg_img, (0, bg_pos))
-        walls_rect = window.blit(walls_bg_img, (0, bg_pos))
+        if flock.has_collision == False:
+            if keys[py.K_w]:
+                movement_vector.y -= movement_speed[1]
+            if keys[py.K_s]:
+                movement_vector.y += movement_speed[1]
+            if keys[py.K_a]:
+                movement_vector.x -= movement_speed[0]
+            if keys[py.K_d]:
+                movement_vector.x += movement_speed[0]
+            flock.Movement(movement_vector)
+        
+        area_1["start"][0] -= flock.vel.x
+        area_1["start"][1] -= flock.vel.y
+        area_1["tutorial"][0] -= flock.vel.x
+        area_1["tutorial"][1] -= flock.vel.y
+
+        # -- DRAW --
+        window.fill(DARKGRAY)
+        bg_rects = [
+            py.draw.rect(window, CYAN, (area_1["start"][0], area_1["start"][1], area_1["start"][2], area_1["start"][3])),
+            #py.draw.rect(window, RED, (area_1["tutorial"][0], area_1["tutorial"][1], area_1["tutorial"][2], area_1["tutorial"][3]))       
+        ]
+        wall_rects = [
+            py.draw.rect(window, RED, (area_1["tutorial"][0], area_1["tutorial"][1], area_1["tutorial"][2], area_1["tutorial"][3]))      
+        ]
+        #water_rect = window.blit(water_bg_img, (0, bg_pos))
+        #walls_rect = window.blit(walls_bg_img, (0, bg_pos))
 
         for x in sections.keys():
             for y in sections[x].keys():
@@ -173,23 +182,24 @@ def MainGame(game):
                         
                     boid.Flock(sections[x][y], flock)
 
-                    #Update
+                    #Update Boid
                     boid.Update()
                     sections = boid.UpdateSections(sections)
 
-                    #Draw
+                    #Draw Boid
                     direction_ray = SimpleRay(boid.pos, boid.vel, 15)
                     #direction_ray.Draw(window)
                     boid_rect = boid.Draw(window)
 
         flock.AddFlockCenterForce(movement_vector)
+        flock.CheckCollisions(wall_rects)
         flock.Update()
         flock_rect = flock.Draw(window)
 
         # Draw text
         text_rect1 = window.blit(fps_text, (200, 50))
         text_rect2 = window.blit(flock_boid_num_text, (200, 100))
-        py.display.update(water_rect)
+        py.display.update()
 
         
 

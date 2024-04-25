@@ -13,13 +13,14 @@ class Flock:
         this.pos = pos
         this.vel = LimitMagnitude(vel, max_speed)
         this.max_speed = max_speed
+        this.saved_max_speed = max_speed
         this.range = range
         this.mass = mass
 
+        this.has_collision = False
         this.num_boids = 0
 
         this.forces = Vec2(0,0)
-
         this.angle = np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))
 
         this.img = img
@@ -40,49 +41,46 @@ class Flock:
     
     def AddFlockCenterForce(this, force=Vec2(0,0)):
         this.forces += force
-
-    def UpdatePosition(this, velocity):
-        new_pos = this.pos
-
-        if new_pos.x > 1425:
-            new_pos.x = 1425
-        elif new_pos.x < 175:
-            new_pos.x = 175
-        if new_pos.y > 800:
-            new_pos.y = 800
-        elif new_pos.y < 100:
-            new_pos.y = 100
-        
-        new_pos += velocity
-
-        return new_pos
     
     def Movement(this, movement_vector):
-        if movement_vector == Vec2(0,0): # check for staying still
-            if this.vel.y > 1:
+        if movement_vector == Vec2(0,0) and this.has_collision == False: # check for staying still
+            if this.vel.y > 0:
                 this.vel.y -= 0.1
-                if this.vel.y < 1:
-                    this.vel.y = 1
-            elif this.vel.y < 1:
+                if this.vel.y < 0:
+                    this.vel.y = 0
+            elif this.vel.y < 0:
                 this.vel.y += 0.1
-                if this.vel.y > 1:
-                    this.vel.y = 1
+                if this.vel.y > 0:
+                    this.vel.y = 0
 
             if this.vel.x > 0:
                 this.vel.x -= 0.1
                 if this.vel.x < 0:
                     this.vel.x = 0
-            elif this.vel.x < 1:
+            elif this.vel.x < 0:
                 this.vel.x += 0.1
-                if this.vel.x > 1:
-                    this.vel.x = 1
+                if this.vel.x > 0:
+                    this.vel.x = 0
+    
+    def CheckCollisions(this, wall_rects):
+        collide_index = this.rect.collidelist(wall_rects)
+        if collide_index != -1:
+            this.max_speed = 0
+            this.has_collision = True
+            return True
+        this.max_speed = this.saved_max_speed
+        this.has_collision = False
+        return False
 
     def Update(this):
-        if this.forces != Vec2(0,0):
+        if this.has_collision: return
+
+        if this.vel != Vec2(0,0):
             this.angle = np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))
         accel = this.forces / this.mass
         this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
-        this.pos = this.UpdatePosition(this.vel)
+        this.pos += this.vel
+            
         this.forces = Vec2(0,0)
 
         #this.furthest_boid = this.FindFurthestBoidFromFlockCenter()
