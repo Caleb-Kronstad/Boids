@@ -4,43 +4,42 @@ from pygame import Vector2 as Vec2
 import numpy as np
 from colors import *
 
+class Wall:
+    def __init__(this, x1, y1, x2, y2):
+        this.x1 = x1
+        this.y1 = y1
+        this.x2 = x2
+        this.y2 = y2
+
+    def DebugDraw(this, window, color=RED, width=3):
+        py.draw.line(window, color, 
+                     (this.x1, this.y1), 
+                     (this.x2, this.y2),
+                     width)
+
 # only for drawing the ray onto the screen, not for calculating anything
-class SimpleRay:
+class Ray:
     def __init__(this, pos, direction, distance):
         this.pos = pos
         this.direction = direction
         this.distance = distance
 
-    def Draw(this, window, width=3, color=RED):
-        py.draw.line(window, color,
-                     (this.pos.x, this.pos.y), 
-                     (this.direction.x * this.distance + this.pos.x, this.direction.y * this.distance + this.pos.y),
-                     width)
-
-class Ray:
-    def __init__(this, pos, angle, angle_offset=0, distance=100):
-        this.pos = pos
-        this.angle_offset = angle_offset
-        this.distance = distance
-        this.direction = Vec2(np.cos(angle+angle_offset), np.sin(angle+angle_offset))
-
     def ChangeDirection(this, angle):
-        angle += this.angle_offset
         this.direction = Vec2(np.cos(angle), np.sin(angle))
-
-    def Draw(this, window, width=1):
-        py.draw.line(window, RED, 
-                     (this.pos.x, this.pos.y), 
-                     (this.direction.x * this.distance + this.pos.x, this.direction.y * this.distance + this.pos.y),
-                     width)
         
-    def Cast(this, other):
-        for ray in other.rays:
-            intersectionPoint = GetLineIntersection(Vec2(ray.pos.x, ray.pos.y), Vec2(ray.direction.x * ray.distance + ray.pos.x, ray.direction.y * ray.distance + ray.pos.y),
+    def CastToWalls(this, walls):
+        for wall in walls:
+            intersectionPoint = GetLineIntersection(Vec2(wall.x1, wall.y1), Vec2(wall.x2, wall.y2),
                                                   Vec2(this.pos.x, this.pos.y), Vec2(this.direction.x * this.distance + this.pos.x, this.direction.y * this.distance + this.pos.y))
             if (intersectionPoint):
                 return True
         return False
+
+    def DebugDraw(this, window, color=RED, width=3):
+        py.draw.line(window, color,
+                     (this.pos.x, this.pos.y), 
+                     (this.direction.x * this.distance + this.pos.x, this.direction.y * this.distance + this.pos.y),
+                     width)
 
 # Fast method for getting line intersections :D
 # Gavin, 12/28/2009, stackoverflow.com. https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect 4/21/2024

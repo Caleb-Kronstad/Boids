@@ -74,11 +74,11 @@ def MainGame(game):
 
     areas = {
         0 : area_1,
-        1 : area_2,
-        2 : area_3,
-        3 : area_4,
-        4 : area_5,
-        5 : area_6
+        #1 : area_2,
+        #2 : area_3,
+        #3 : area_4,
+        #4 : area_5,
+        #5 : area_6
     }
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
@@ -115,6 +115,16 @@ def MainGame(game):
 
     flock_rect = flock.Draw(window)
 
+    bg_rects = []
+    for area in areas.values():
+        for bg in area.values():
+            bg_rect = py.Rect(bg[0], bg[1], bg[2], bg[3])
+            bg_rects.append(bg_rect)
+
+    wall_rects = []
+    test_wall = py.Rect(area_1["start"][0] - area_1["tutorial"][2], area_1["tutorial"][1] + area_1["tutorial"][3], area_1["tutorial"][2], area_1["tutorial"][3])
+    wall_rects.append(test_wall)
+
     while game:
         clock.tick(fps)
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK)
@@ -136,7 +146,7 @@ def MainGame(game):
 
         #Movement force based on WASD keys pressed
         movement_vector = Vec2(0,0)
-        if flock.has_collision == False:
+        if flock.stunned == False:
             if keys[py.K_w]:
                 movement_vector.y -= movement_speed[1]
             if keys[py.K_s]:
@@ -145,22 +155,21 @@ def MainGame(game):
                 movement_vector.x -= movement_speed[0]
             if keys[py.K_d]:
                 movement_vector.x += movement_speed[0]
-            flock.Movement(movement_vector)
-        
-        area_1["start"][0] -= flock.vel.x
-        area_1["start"][1] -= flock.vel.y
-        area_1["tutorial"][0] -= flock.vel.x
-        area_1["tutorial"][1] -= flock.vel.y
+        flock.Movement(movement_vector)
 
         # -- DRAW --
         window.fill(DARKGRAY)
-        bg_rects = [
-            py.draw.rect(window, CYAN, (area_1["start"][0], area_1["start"][1], area_1["start"][2], area_1["start"][3])),
-            #py.draw.rect(window, RED, (area_1["tutorial"][0], area_1["tutorial"][1], area_1["tutorial"][2], area_1["tutorial"][3]))       
-        ]
-        wall_rects = [
-            py.draw.rect(window, RED, (area_1["tutorial"][0], area_1["tutorial"][1], area_1["tutorial"][2], area_1["tutorial"][3]))      
-        ]
+
+        for bg in bg_rects:
+            bg.x -= movement_vector.x
+            bg.y -= movement_vector.y
+            py.draw.rect(window, CYAN, bg)
+
+        for wall in wall_rects:
+            wall.x -= movement_vector.x
+            wall.y -= movement_vector.y
+            py.draw.rect(window, RED, wall, 10)
+
         #water_rect = window.blit(water_bg_img, (0, bg_pos))
         #walls_rect = window.blit(walls_bg_img, (0, bg_pos))
 
@@ -184,11 +193,12 @@ def MainGame(game):
 
                     #Update Boid
                     boid.Update()
+                    boid.pos -= flock.vel
                     sections = boid.UpdateSections(sections)
 
                     #Draw Boid
-                    direction_ray = SimpleRay(boid.pos, boid.vel, 15)
-                    #direction_ray.Draw(window)
+                    direction_ray = Ray(boid.pos, boid.vel, 15)
+                    #direction_ray.DebugDraw(window)
                     boid_rect = boid.Draw(window)
 
         flock.AddFlockCenterForce(movement_vector)

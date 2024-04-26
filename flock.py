@@ -6,6 +6,7 @@ import random, sys
 
 from boid import *
 from helpfunctions import *
+from ray import *
 
 class Flock:
     def __init__(this, pos, vel, max_speed, range, img, mass=1):
@@ -17,8 +18,15 @@ class Flock:
         this.range = range
         this.mass = mass
 
+        this.last_vel = vel
+
+        this.collision_type = None
         this.has_collision = False
         this.num_boids = 0
+
+        this.stunned = False
+        this.stun_timer = 30
+        this.stun_length = this.stun_timer
 
         this.forces = Vec2(0,0)
         this.angle = np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))
@@ -26,24 +34,13 @@ class Flock:
         this.img = img
         this.saved_img = img
 
-        this.furthest_boid = this.FindFurthestBoidFromFlockCenter()
-
-    def FindFurthestBoidFromFlockCenter(this):
-        furthest_boid = None
-        furthest_distance = 0
-        for boid in this.boids.values():
-            dist_from_center = Normalize(boid.pos - this.pos)
-            if dist_from_center > furthest_distance:
-                furthest_distance = dist_from_center
-                furthest_boid = boid
-
-        return furthest_boid
+        this.rect = this.img.get_rect(center = this.pos)
     
     def AddFlockCenterForce(this, force=Vec2(0,0)):
         this.forces += force
     
     def Movement(this, movement_vector):
-        if movement_vector == Vec2(0,0) and this.has_collision == False: # check for staying still
+        if movement_vector == Vec2(0,0): # check for no input
             if this.vel.y > 0:
                 this.vel.y -= 0.1
                 if this.vel.y < 0:
@@ -64,22 +61,34 @@ class Flock:
     
     def CheckCollisions(this, wall_rects):
         collide_index = this.rect.collidelist(wall_rects)
-        if collide_index != -1:
-            this.max_speed = 0
+        if collide_index != -1 and this.stunned == False:
+            wall = wall_rects[collide_index]
+            this.forces = Vec2(0,0)
+            this.vel = (-this.last_vel) * 4
+
             this.has_collision = True
+            this.stunned = True
+            this.max_speed = 10
             return True
+        
         this.max_speed = this.saved_max_speed
+        this.collision_type = None
         this.has_collision = False
         return False
 
     def Update(this):
-        if this.has_collision: return
-
+        if this.stunned:
+            this.stun_timer -= 1
+            if this.stun_timer <= 0:
+                this.stunned = False
+                this.stun_timer = this.stun_length
+        
         if this.vel != Vec2(0,0):
             this.angle = np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))
         accel = this.forces / this.mass
         this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
         this.pos += this.vel
+        this.last_vel = this.vel
             
         this.forces = Vec2(0,0)
 
@@ -88,5 +97,5 @@ class Flock:
 
     def Draw(this, window):
         this.rect = this.img.get_rect(center = this.pos)
-        drawn_rect = window.blit(this.img, this.rect)
-        return drawn_rect
+        temp_rect = window.blit(this.img, this.rect)
+        return temp_rect
