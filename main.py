@@ -38,48 +38,44 @@ font_arial30 = py.font.SysFont('Arial', 30)
 ## MAIN GAME
 
 def MainGame(game):
-    area_1 = { #x, y, width, height
-        "start" : [0, 0, 1600, 900], #start
-        "tutorial" : [-1000, -900, 2600, 900], #tutorial
-    }
-    area_2 = {
-        "hallway-1" : [0, -900, 600, 1800], #hallway
-        "puzzle-1" : [-5400, -3600, 6000, 2700], #puzzle
-        "cell-1" : [-6200, -4500, 1600, 1800], #cell
-        "hallway-2" : [600, -1800, 2000, 900], #hallway
-        "cell-2" : [1800, -2700, 1000, 1400], #cell
-        "hallway-3" : [600, -3600, 1200, 900] #hallway
-    }
-    area_3 = {
-        "hallway-1" : [0, -1800, 600, 2700],
-        "hallway-2" : [-800, -2700, 900, 2400],
-        "puzzle-1" : [-2600, -2700, 1800, 2700],
-        "puzzle-2" : [1600, -3100, 2000, 3100]
-    }
-    area_4 = {
-        "hallway-1" : [0, -900, 600, 900],
-        "puzzle-1" : [-3400, -2700, 4000, 1800]
-    }
-    area_5 = {
-        "hallway-1" : [0, 0, 600, 900],
-        "puzzle-1" : [-2000, -3000, 15000, 3000],
-        "hallway-2" : [9000, 0, 1000, 2700],
-        "hallway-3" : [4000, -2800, 4400, 600]
-    }
-    area_6 = {
-        "hallway-1" : [0, 0, 800, 3400],
-        "hallway-2" : [-4000, -2600, 4000, 900],
-        "puzzle-1" : [-300, -3400, 2700, 1200]
-    }
+    map_rects = [
+        # First area
+        (0, 1000, 1500, 2000),
+        (-1200, 1000, 1200, 1000),
+        # Second area
+        (1000, 0, 500, 1000),
+        (-1200, -3000, 4000, 3000),
+        (-2200, -4000, 1000, 2000),
+        (2800, -500, 1000, 500),
+        (3800, -500, 1000, 1500),
+        # Third area
+        (2300, -5000, 500, 2000),
+        (-1200, -6000, 6000, 1000),
+        (-2200, -7000, 1000, 2000),
+        (4800, -7000, 1500, 3000),
+        # Fourth area
+        (2300, -8000, 500, 2000),
+        (-1200, -10000, 4000, 2000),
+        (-1200, -11000, 500, 1000),
+        (-3700, -14000, 13000, 3000),
+        (4300, -11000, 500, 3000),
+        (2800, -8500, 1500, 500),
+        # Fifth area
+        (8800, -11000, 500, 7000),
+        (6300, -7000, 2500, 500),
+        (8000, -4000, 2500, 2000),
+        # Sixth area (Boss)
+        (2800, -1500, 3000, 500),
+        (5300, -1000, 500, 5000),
+        (4300, 3000, 5000, 5000)
+    ]
 
-    areas = {
-        0 : area_1,
-        #1 : area_2,
-        #2 : area_3,
-        #3 : area_4,
-        #4 : area_5,
-        #5 : area_6
-    }
+    collider_rects = [
+        (-1200, 0, 2200, 1000),
+        (1500, 0, 2300, 3000),
+        (-1200, -5000, 3500, 2000),
+        (-2200, -5000, 1000, 1000)
+    ]
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
     circle_50px_img = cache.LoadImage('resources/circle_50px.png')
@@ -110,20 +106,26 @@ def MainGame(game):
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
 
     flock = Flock(Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 3, 200, ducky_large_img)
-    movement_vector = Vec2(0,0)
-    movement_speed = [flock.max_speed, flock.max_speed]
 
     flock_rect = flock.Draw(window)
 
     bg_rects = []
-    for area in areas.values():
-        for bg in area.values():
-            bg_rect = py.Rect(bg[0], bg[1], bg[2], bg[3])
-            bg_rects.append(bg_rect)
+    for bg in map_rects:
+        bg_rect = py.Rect(bg[0]/2, bg[1]/2, bg[2]/2, bg[3]/2)
+        bg_rects.append(bg_rect)
 
-    wall_rects = []
-    test_wall = py.Rect(area_1["start"][0] - area_1["tutorial"][2], area_1["tutorial"][1] + area_1["tutorial"][3], area_1["tutorial"][2], area_1["tutorial"][3])
-    wall_rects.append(test_wall)
+    col_rects = []
+    for col in collider_rects:
+        col_rect = py.Rect(col[0]/2, col[1]/2, col[2]/2, col[3]/2)
+        col_rects.append(col_rect)
+
+    map_offset = [500, -700]
+    for bg in bg_rects:
+        bg.x += map_offset[0]
+        bg.y += map_offset[1]
+    for col in col_rects:
+        col.x += map_offset[0]
+        col.y += map_offset[1]
 
     while game:
         clock.tick(fps)
@@ -141,6 +143,8 @@ def MainGame(game):
             if e.type == py.KEYUP:
                 key = e.key
 
+        player_from_center = Normalize(Vec2(screen_width/2, screen_height/2) - flock.pos)
+
         #Key input
         keys = py.key.get_pressed()
 
@@ -148,27 +152,33 @@ def MainGame(game):
         movement_vector = Vec2(0,0)
         if flock.stunned == False:
             if keys[py.K_w]:
-                movement_vector.y -= movement_speed[1]
+                movement_vector.y -= flock.max_speed
             if keys[py.K_s]:
-                movement_vector.y += movement_speed[1]
+                movement_vector.y += flock.max_speed
             if keys[py.K_a]:
-                movement_vector.x -= movement_speed[0]
+                movement_vector.x -= flock.max_speed
             if keys[py.K_d]:
-                movement_vector.x += movement_speed[0]
+                movement_vector.x += flock.max_speed 
+
         flock.Movement(movement_vector)
 
         # -- DRAW --
         window.fill(DARKGRAY)
 
+        seen_rects = []
         for bg in bg_rects:
-            bg.x -= movement_vector.x
-            bg.y -= movement_vector.y
-            py.draw.rect(window, CYAN, bg)
+            bg.x -= round(flock.vel.x * (player_from_center / 100 + 1))
+            bg.y -= round(flock.vel.y * (player_from_center / 100 + 1))
 
-        for wall in wall_rects:
-            wall.x -= movement_vector.x
-            wall.y -= movement_vector.y
-            py.draw.rect(window, RED, wall, 10)
+            if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: #only render the backgrounds on screen to save performance
+                py.draw.rect(window, CYAN, bg)
+                seen_rects.append(bg)
+
+        for col in col_rects:
+            col.x -= round(flock.vel.x * (player_from_center / 100 + 1))
+            col.y -= round(flock.vel.y * (player_from_center / 100 + 1))
+
+            py.draw.rect(window, RED, col, 10)
 
         #water_rect = window.blit(water_bg_img, (0, bg_pos))
         #walls_rect = window.blit(walls_bg_img, (0, bg_pos))
@@ -202,7 +212,7 @@ def MainGame(game):
                     boid_rect = boid.Draw(window)
 
         flock.AddFlockCenterForce(movement_vector)
-        flock.CheckCollisions(wall_rects)
+        flock.CheckCollisions(col_rects)
         flock.Update()
         flock_rect = flock.Draw(window)
 

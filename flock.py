@@ -67,13 +67,12 @@ class Flock:
             this.vel = (-this.last_vel) * 4
 
             this.has_collision = True
-            this.stunned = True
             this.max_speed = 10
+            this.stunned = True
             return True
         
-        this.max_speed = this.saved_max_speed
-        this.collision_type = None
         this.has_collision = False
+        this.max_speed = this.saved_max_speed
         return False
 
     def Update(this):
@@ -89,6 +88,15 @@ class Flock:
         this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
         this.pos += this.vel
         this.last_vel = this.vel
+
+        if this.pos.x > 1400:
+            this.pos.x = 1400
+        elif this.pos.x < 200:
+            this.pos.x = 200
+        if this.pos.y > 800:
+            this.pos.y = 800
+        elif this.pos.y < 100:
+            this.pos.y = 100
             
         this.forces = Vec2(0,0)
 

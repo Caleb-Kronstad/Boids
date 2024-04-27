@@ -17,6 +17,13 @@ def LimitMagnitude(vector, limit):
     else:
         return vector
     
+def Clamp(num, min=0, max=1):
+    if num < min:
+        return min
+    if num > max:
+        return max
+    return num
+    
 def SetMagnitude(vector, magnitude):
     if (Normalize(vector) > 0):
         normalized_vector = vector / Normalize(vector)
