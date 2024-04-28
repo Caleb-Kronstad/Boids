@@ -1,8 +1,7 @@
 ##--- TEMPORARY CITATIONS ---
-# https://www.cs.trinity.edu/~jhowland/cs2322/2d/2d/ 4/18/2024
-# https://stackoverflow.com/questions/6247153/angle-from-2d-unit-vector 4/18/2024
-# https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect 4/20/2024
-# https://www.youtube.com/watch?v=HzR-9tfOJQo 4/20/2024
+# Reynolds, Craig. “Boids.” Red3d, 1995, www.red3d.com/cwr/boids/. 
+# Lague, Sebastian. “Coding Adventure: Boids.” YouTube, 26 Aug. 2019, www.youtube.com/watch?v=bqtqltqcQhw&t=118s. 
+# Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect. 
 ##---
 
 #import libraries to be used
@@ -71,10 +70,35 @@ def MainGame(game):
     ]
 
     collider_rects = [
-        (-1200, 0, 2200, 1000),
-        (1500, 0, 2300, 3000),
-        (-1200, -5000, 3500, 2000),
-        (-2200, -5000, 1000, 1000)
+        (-1200, 0, 2200, 1000), #1
+        (1500, 0, 2300, 3000), #2
+        (-1200, -5000, 3500, 2000), #3
+        (-2200, -5000, 1000, 1000), #4
+        (-1200, -8000, 3500, 2000), #5
+        (-3700, -11000, 2500, 4000), #6
+        (-3700, -7000, 1500, 5000), #7
+        (-3700, -2000, 2500, 4000), #8
+        (-3700, 2000, 3700, 1000), #9
+        (-1200, 3000, 2700, 1000), #10
+        (1500, 3000, 2800, 6000), #11
+        (3800, 1000, 1500, 2000), #12
+        (4800, -500, 500, 1500), #13
+        (2800, -1000, 2500, 500), #14
+        (4300, 8000, 6000, 1000), #15
+        (9300, 3000, 1000, 5000), #16
+        (5800, -1500, 4500, 4500), #17
+        (2800, -4000, 5200, 2500), #18
+        (2800, -5000, 2000, 1000), #19
+        (6300, -6500, 2500, 2500), #20
+        (8000, -2000, 3500, 500), #21
+        (10500, -4000, 1000, 2000), #22
+        (9300, -14000, 1800, 10000), #23
+        (-3700, -15000, 14800, 1000), #24
+        (-4700, -15000, 1000, 5000), #25
+        (-700, -11000, 5000, 1000), #26
+        (2800, -10000, 1500, 1500), #27
+        (4800, -11000, 4000, 4000), #28
+        (2800, -8000, 2000, 2000), #29
     ]
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
@@ -105,7 +129,7 @@ def MainGame(game):
         boid = Boid(pos, vel, accel, current_boid_img)
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
 
-    flock = Flock(Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 3, 200, ducky_large_img)
+    flock = Flock(Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 5, 200, ducky_large_img)
 
     flock_rect = flock.Draw(window)
 
@@ -143,8 +167,6 @@ def MainGame(game):
             if e.type == py.KEYUP:
                 key = e.key
 
-        player_from_center = Normalize(Vec2(screen_width/2, screen_height/2) - flock.pos)
-
         #Key input
         keys = py.key.get_pressed()
 
@@ -167,16 +189,16 @@ def MainGame(game):
 
         seen_rects = []
         for bg in bg_rects:
-            bg.x -= round(flock.vel.x * (player_from_center / 100 + 1))
-            bg.y -= round(flock.vel.y * (player_from_center / 100 + 1))
+            bg.x -= round(flock.vel.x)
+            bg.y -= round(flock.vel.y)
 
             if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: #only render the backgrounds on screen to save performance
                 py.draw.rect(window, CYAN, bg)
                 seen_rects.append(bg)
 
         for col in col_rects:
-            col.x -= round(flock.vel.x * (player_from_center / 100 + 1))
-            col.y -= round(flock.vel.y * (player_from_center / 100 + 1))
+            col.x -= round(flock.vel.x)
+            col.y -= round(flock.vel.y)
 
             py.draw.rect(window, RED, col, 10)
 
@@ -221,7 +243,7 @@ def MainGame(game):
         text_rect2 = window.blit(flock_boid_num_text, (200, 100))
         py.display.update()
 
-        
+
 
 def Menu(menu, game, performance_test):
     play_button = py.Rect(screen_width/2 - 100, screen_height/2 - 100, 200, 50)
@@ -276,7 +298,7 @@ def Menu(menu, game, performance_test):
 ## PERFORMANCE TEST
 def PerformanceTest(performance_test):
     blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
-    add_boid_text = font_arial30.render("Press 'T' to add a boid", True, BLACK)
+    add_boid_text = font_arial30.render("Press 'T' to add a boid", True, WHITE)
     boid_count = 0
     
     flock_params = FlockParams(50, 100, 200, 1, 1, 1)
@@ -301,8 +323,8 @@ def PerformanceTest(performance_test):
 
     while performance_test:
         clock.tick(fps)
-        fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK)
-        boid_count_text = font_arial30.render("BOIDS: " + str(boid_count), True, BLACK)
+        fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, WHITE)
+        boid_count_text = font_arial30.render("BOIDS: " + str(boid_count), True, WHITE)
 
         for e in py.event.get():
             if e.type == py.QUIT: 

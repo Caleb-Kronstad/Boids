@@ -58,9 +58,21 @@ class Flock:
                 this.vel.x += 0.1
                 if this.vel.x > 0:
                     this.vel.x = 0
+
+        if (this.vel.x > 0 and this.vel.x < 0.1) or (this.vel.x < 0 and this.vel.x > -0.1):
+            this.vel.x = 0
+        if (this.vel.y > 0 and this.vel.y < 0.1) or (this.vel.y < 0 and this.vel.y > -0.1):
+            this.vel.y = 0
     
     def CheckCollisions(this, wall_rects):
-        collide_index = this.rect.collidelist(wall_rects)
+        collide_rect = this.rect
+        if (this.vel.x < 0 and this.vel.y > 0) or (this.vel.x < 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y > 0) or (this.vel == Vec2(0,0)):
+            collide_rect.width /= 2
+            collide_rect.height /= 2 
+            collide_rect.x += collide_rect.width/2
+            collide_rect.y += collide_rect.height/2
+
+        collide_index = collide_rect.collidelist(wall_rects)
         if collide_index != -1 and this.stunned == False:
             wall = wall_rects[collide_index]
             this.forces = Vec2(0,0)
@@ -104,6 +116,7 @@ class Flock:
         this.img = py.transform.rotate(this.saved_img, this.angle)
 
     def Draw(this, window):
-        this.rect = this.img.get_rect(center = this.pos)
+        pos = Vec2(800, 450)
+        this.rect = this.img.get_rect(center = pos)
         temp_rect = window.blit(this.img, this.rect)
         return temp_rect
