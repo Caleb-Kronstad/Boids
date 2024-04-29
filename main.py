@@ -15,6 +15,7 @@ from colors import *
 from boid import *
 from flock import *
 from cache import *
+from door import *
 from ray import *
 from helpfunctions import *
 
@@ -37,7 +38,7 @@ font_arial30 = py.font.SysFont('Arial', 30)
 ## MAIN GAME
 
 def MainGame(game):
-    map_rects = [
+    map = [
         # First area
         (0, 1000, 1500, 2000),
         (-1200, 1000, 1200, 1000),
@@ -69,7 +70,8 @@ def MainGame(game):
         (4300, 3000, 5000, 5000)
     ]
 
-    collider_rects = [
+    debug_colliders = True
+    colliders = [
         (-1200, 0, 2200, 1000), #1
         (1500, 0, 2300, 3000), #2
         (-1200, -5000, 3500, 2000), #3
@@ -99,6 +101,11 @@ def MainGame(game):
         (2800, -10000, 1500, 1500), #27
         (4800, -11000, 4000, 4000), #28
         (2800, -8000, 2000, 2000), #29
+    ]
+
+    doors = [
+        Door(1000, 900, 500, 100, boids_needed = 1), # first area to second
+        
     ]
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
@@ -134,12 +141,12 @@ def MainGame(game):
     flock_rect = flock.Draw(window)
 
     bg_rects = []
-    for bg in map_rects:
+    for bg in map:
         bg_rect = py.Rect(bg[0]/2, bg[1]/2, bg[2]/2, bg[3]/2)
         bg_rects.append(bg_rect)
 
     col_rects = []
-    for col in collider_rects:
+    for col in colliders:
         col_rect = py.Rect(col[0]/2, col[1]/2, col[2]/2, col[3]/2)
         col_rects.append(col_rect)
 
@@ -150,6 +157,9 @@ def MainGame(game):
     for col in col_rects:
         col.x += map_offset[0]
         col.y += map_offset[1]
+    for door in doors:
+        door.rect.x += map_offset[0]
+        door.rect.y += map_offset[1]
 
     while game:
         clock.tick(fps)
@@ -187,20 +197,29 @@ def MainGame(game):
         # -- DRAW --
         window.fill(DARKGRAY)
 
+        rounded_flock_velx = round(flock.vel.x)
+        rounded_flock_vely = round(flock.vel.y)
+
         seen_rects = []
         for bg in bg_rects:
-            bg.x -= round(flock.vel.x)
-            bg.y -= round(flock.vel.y)
+            bg.x -= rounded_flock_velx
+            bg.y -= rounded_flock_vely
 
             if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: #only render the backgrounds on screen to save performance
                 py.draw.rect(window, CYAN, bg)
                 seen_rects.append(bg)
 
         for col in col_rects:
-            col.x -= round(flock.vel.x)
-            col.y -= round(flock.vel.y)
+            col.x -= rounded_flock_velx
+            col.y -= rounded_flock_vely
 
-            py.draw.rect(window, RED, col, 10)
+            if debug_colliders and (col.x + col.w >= 0 and col.y + col.h >= 0):
+                py.draw.rect(window, RED, col, 10)
+
+        for door in doors:
+            door.rect.x -= rounded_flock_velx
+            door.rect.y -= rounded_flock_vely
+            door.Draw(window)
 
         #water_rect = window.blit(water_bg_img, (0, bg_pos))
         #walls_rect = window.blit(walls_bg_img, (0, bg_pos))
@@ -214,6 +233,7 @@ def MainGame(game):
                     if Normalize(flock.pos - boid.pos) < flock.range:
                         if not boid.in_flock:
                             boid.in_flock = True
+                            flock.num_boids += 1
 
                         boid.max_speed = flock.max_speed
                         boid.alignment_enabled = False
@@ -234,7 +254,11 @@ def MainGame(game):
                     boid_rect = boid.Draw(window)
 
         flock.AddFlockCenterForce(movement_vector)
-        flock.CheckCollisions(col_rects)
+        
+        # COLLISIONS
+        flock.CheckWallCollisions(col_rects)
+        flock.CheckDoorCollisions(doors)
+
         flock.Update()
         flock_rect = flock.Draw(window)
 

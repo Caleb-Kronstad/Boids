@@ -59,33 +59,56 @@ class Flock:
                 if this.vel.x > 0:
                     this.vel.x = 0
 
-        if (this.vel.x > 0 and this.vel.x < 0.1) or (this.vel.x < 0 and this.vel.x > -0.1):
-            this.vel.x = 0
-        if (this.vel.y > 0 and this.vel.y < 0.1) or (this.vel.y < 0 and this.vel.y > -0.1):
-            this.vel.y = 0
+        # if (this.vel.x > 0 and this.vel.x < 0.1) or (this.vel.x < 0 and this.vel.x > -0.1):
+        #     this.vel.x = 0
+        # if (this.vel.y > 0 and this.vel.y < 0.1) or (this.vel.y < 0 and this.vel.y > -0.1):
+        #     this.vel.y = 0
     
-    def CheckCollisions(this, wall_rects):
-        collide_rect = this.rect
+    def CheckWallCollisions(this, walls):
+        this.collide_rect = this.rect
+        multiplier = 5
         if (this.vel.x < 0 and this.vel.y > 0) or (this.vel.x < 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y > 0) or (this.vel == Vec2(0,0)):
-            collide_rect.width /= 2
-            collide_rect.height /= 2 
-            collide_rect.x += collide_rect.width/2
-            collide_rect.y += collide_rect.height/2
+            this.collide_rect.width /= 2
+            this.collide_rect.height /= 2 
+            this.collide_rect.x += this.collide_rect.width/2
+            this.collide_rect.y += this.collide_rect.height/2
+            multiplier = 15
 
-        collide_index = collide_rect.collidelist(wall_rects)
+        collide_index = this.collide_rect.collidelist(walls)
         if collide_index != -1 and this.stunned == False:
-            wall = wall_rects[collide_index]
-            this.forces = Vec2(0,0)
-            this.vel = (-this.last_vel) * 4
-
-            this.has_collision = True
-            this.max_speed = 10
-            this.stunned = True
+            this.CollisionResponse(multiplier)
             return True
         
         this.has_collision = False
         this.max_speed = this.saved_max_speed
         return False
+    
+    def CheckDoorCollisions(this, doors):
+        this.collide_rect = this.rect
+        multiplier = 5
+        if (this.vel.x < 0 and this.vel.y > 0) or (this.vel.x < 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y > 0) or (this.vel == Vec2(0,0)):
+            this.collide_rect.width /= 2
+            this.collide_rect.height /= 2 
+            this.collide_rect.x += this.collide_rect.width/2
+            this.collide_rect.y += this.collide_rect.height/2
+            multiplier = 15
+
+        for door in doors:
+            if this.collide_rect.colliderect(door.rect) and door.TryOpen(this) == False and this.stunned == False:
+                this.CollisionResponse(multiplier)
+                return True
+        this.has_collision = False
+        this.max_speed = this.saved_max_speed
+        return False
+
+    
+    def CollisionResponse(this, multiplier):
+        this.forces = Vec2(0,0)
+        this.vel = (-this.last_vel) * multiplier
+
+        this.has_collision = True
+        this.max_speed = 10
+        this.stunned = True
 
     def Update(this):
         if this.stunned:
