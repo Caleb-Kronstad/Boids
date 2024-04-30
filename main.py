@@ -108,6 +108,12 @@ def MainGame(game):
         
     ]
 
+    boid_positions = [
+        (500, 0), #1
+        (600, -50), #2
+        (400, 50), #3
+    ]
+
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
     circle_50px_img = cache.LoadImage('resources/circle_50px.png')
     blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
@@ -128,8 +134,8 @@ def MainGame(game):
         3: { 0: {}, 1: {}, 2: {} }
     }
 
-    for i in range(5):
-        pos = Vec2(random.randint(500,600), random.randint(500,600))
+    for i in range(3):
+        pos = Vec2(boid_positions[i][0], boid_positions[i][1])
         vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
         accel = Vec2(1,1)
         
@@ -138,7 +144,7 @@ def MainGame(game):
 
     flock = Flock(Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 5, 200, ducky_large_img)
 
-    flock_rect = flock.Draw(window)
+    flock.Draw(window)
 
     bg_rects = []
     for bg in map:
@@ -230,22 +236,23 @@ def MainGame(game):
                 for boid in sections[x][y].values():
                     
                     #Add forces to boid
-                    if Normalize(flock.pos - boid.pos) < flock.range:
+                    print(Normalize(flock.screen_pos - boid.pos))
+                    if Normalize(flock.screen_pos - boid.pos) < flock.range:
                         if not boid.in_flock:
                             boid.in_flock = True
                             flock.num_boids += 1
 
-                        boid.max_speed = flock.max_speed
+                        boid.max_speed = flock.saved_max_speed
                         boid.alignment_enabled = False
                     else:
-                        boid.max_speed = 4
+                        boid.max_speed = 6
                         boid.alignment_enabled = True
                         
                     boid.Flock(sections[x][y], flock)
 
                     #Update Boid
-                    boid.Update()
                     boid.pos -= flock.vel
+                    boid.Update()
                     sections = boid.UpdateSections(sections)
 
                     #Draw Boid

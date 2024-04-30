@@ -24,6 +24,8 @@ class Flock:
         this.has_collision = False
         this.num_boids = 0
 
+        this.screen_pos = Vec2(800, 450)
+
         this.stunned = False
         this.stun_timer = 30
         this.stun_length = this.stun_timer
@@ -139,7 +141,6 @@ class Flock:
         this.img = py.transform.rotate(this.saved_img, this.angle)
 
     def Draw(this, window):
-        pos = Vec2(800, 450)
-        this.rect = this.img.get_rect(center = pos)
+        this.rect = this.img.get_rect(center = this.screen_pos)
         temp_rect = window.blit(this.img, this.rect)
         return temp_rect

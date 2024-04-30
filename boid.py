@@ -18,13 +18,15 @@ class FlockParams():
         this.cohesion_factor = cohesion_factor
 
 class Boid:
-    def __init__(this, pos, vel, accel, img, mass=1, bounds_xl = 175, bounds_xr = 1425, bound_to_window = True):
+    def __init__(this, pos, vel, accel, img, rays=None, mass=1, bounds_xl = 175, bounds_xr = 1425, bound_to_window = True):
         this.id = random.randint(-sys.maxsize-1, sys.maxsize)
 
         this.in_flock = False
         this.pos = pos
         this.accel = accel
         this.mass = mass
+
+        this.rays = rays
 
         this.cohesion_enabled = True
         this.alignment_enabled = True
@@ -70,12 +72,14 @@ class Boid:
             if dist < flock_params.cohesion_distance:
                 cohesion_force += other.pos
                 if flock != None and this.in_flock:
-                    cohesion_force += flock.pos - other.pos
+                    cohesion_force += flock.screen_pos - other.pos
                 cohesion_neighbors += 1
 
             if dist < flock_params.separation_distance:
                 diff = this.pos - other.pos
-                diff *= (1 / (dist + 0.0000000001))
+                if dist < 0:
+                    dist = 0.000001
+                    diff *= 1 / dist
                 separation_force += diff
                 separation_neighbors += 1
         
@@ -97,6 +101,12 @@ class Boid:
             separation_force = SetMagnitude(separation_force, this.max_speed)
             separation_force -= this.vel
             separation_force = LimitMagnitude(separation_force, this.max_force) * flock_params.separation_factor
+
+        if cohesion_neighbors == 0 and flock != None and this.in_flock:
+            cohesion_force += flock.screen_pos - this.pos
+            cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
+            cohesion_force -= this.vel
+            cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
 
         if this.cohesion_enabled: this.AddForce(cohesion_force)
         if this.alignment_enabled: this.AddForce(alignment_force)
@@ -142,6 +152,5 @@ class Boid:
 
     def Draw(this, window):
         this.rect = this.img.get_rect(center = this.pos)
-        if this.pos.y < 901 and this.pos.y > -1:
-            this.rect = window.blit(this.img, this.rect)
-        return this.rect
+        draw_rect = window.blit(this.img, this.rect)
+        return draw_rect
