@@ -18,7 +18,7 @@ class FlockParams():
         this.cohesion_factor = cohesion_factor
 
 class Boid:
-    def __init__(this, pos, vel, accel, img, rays=None, mass=1, bounds_xl = 175, bounds_xr = 1425, bound_to_window = True):
+    def __init__(this, pos, vel, accel, img, rays=None, mass=1, bound_to_window = True):
         this.id = random.randint(-sys.maxsize-1, sys.maxsize)
 
         this.in_flock = False
@@ -26,14 +26,14 @@ class Boid:
         this.accel = accel
         this.mass = mass
 
+        this.origin = Vec2(pos.x, pos.y)
+
         this.rays = rays
 
         this.cohesion_enabled = True
         this.alignment_enabled = True
         this.separation_enabled = True
 
-        this.bounds_xr = bounds_xr
-        this.bounds_xl = bounds_xl
         this.bound_to_window = bound_to_window
         
         if Normalize(vel) > 0:
@@ -125,28 +125,29 @@ class Boid:
 
         return temp_sections
 
-    def Update(this):
+    def Update(this, flock=None):
         this.accel = this.forces / this.mass
         this.vel = LimitMagnitude(this.vel + this.accel, this.max_speed)
+
         this.pos += this.vel
+        if flock != None:
+            this.pos -= flock.vel
+            this.origin -= flock.vel
+            if not this.in_flock and Normalize(this.origin - this.pos) > 100:
+                this.vel *= -1
         this.forces = Vec2(0,0) # reset forces for next frame
 
         this.img = py.transform.rotate(this.saved_img, np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))) # rotate boid image -- due to py's skewed coordinate system the rotation has to be altered slightly (hence the negative y axis)
 
-        if this.bound_to_window == False:
-            if this.pos.x > this.bounds_xr:
-                this.pos.x = this.bounds_xl
-            elif this.pos.x < this.bounds_xl:
-                this.pos.x = this.bounds_xr
+        if this.bound_to_window == False: # to keep the boids on screen in the performance test
+            if this.pos.x > 1600:
+                this.pos.x = 0
+            elif this.pos.x < 0:
+                this.pos.x = 1600
             if this.pos.y > 900:
                 this.pos.y = 0
             elif this.pos.y < 0:
                 this.pos.y = 900
-        else:
-            if (this.pos.x > this.bounds_xr):
-                this.pos.x = this.bounds_xr
-            elif (this.pos.x < this.bounds_xl):
-                this.pos.x = this.bounds_xl
 
         this.section = FindBoidSection(this)
 
@@ -154,3 +155,4 @@ class Boid:
         this.rect = this.img.get_rect(center = this.pos)
         draw_rect = window.blit(this.img, this.rect)
         return draw_rect
+    

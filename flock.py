@@ -36,7 +36,7 @@ class Flock:
         this.img = img
         this.saved_img = img
 
-        this.rect = this.img.get_rect(center = this.pos)
+        this.rect = this.img.get_rect(center = this.screen_pos)
     
     def AddFlockCenterForce(this, force=Vec2(0,0)):
         this.forces += force
@@ -60,11 +60,6 @@ class Flock:
                 this.vel.x += 0.1
                 if this.vel.x > 0:
                     this.vel.x = 0
-
-        # if (this.vel.x > 0 and this.vel.x < 0.1) or (this.vel.x < 0 and this.vel.x > -0.1):
-        #     this.vel.x = 0
-        # if (this.vel.y > 0 and this.vel.y < 0.1) or (this.vel.y < 0 and this.vel.y > -0.1):
-        #     this.vel.y = 0
     
     def CheckWallCollisions(this, walls):
         this.collide_rect = this.rect
@@ -125,15 +120,6 @@ class Flock:
         this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
         this.pos += this.vel
         this.last_vel = this.vel
-
-        if this.pos.x > 1400:
-            this.pos.x = 1400
-        elif this.pos.x < 200:
-            this.pos.x = 200
-        if this.pos.y > 800:
-            this.pos.y = 800
-        elif this.pos.y < 100:
-            this.pos.y = 100
             
         this.forces = Vec2(0,0)
 

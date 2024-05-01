@@ -40,38 +40,38 @@ font_arial30 = py.font.SysFont('Arial', 30)
 def MainGame(game):
     map = [
         # First area
-        (0, 1000, 1500, 2000),
-        (-1200, 1000, 1200, 1000),
+        (0, 1000, 1500, 2000), # start room
+        (-1200, 1000, 1200, 1000), # tutorial room (with first duckling)
         # Second area
-        (1000, 0, 500, 1000),
-        (-1200, -3000, 4000, 3000),
-        (-2200, -4000, 1000, 2000),
-        (2800, -500, 1000, 500),
-        (3800, -500, 1000, 1500),
+        (1000, 0, 500, 1000), # hallway to second area
+        (-1200, -3000, 4000, 3000), # second area main puzzle room
+        (-2200, -4000, 1000, 2000), # left room with ducklings
+        (2800, -500, 1000, 500), # right hallway 
+        (3800, -500, 1000, 1500), # right room with ducklings
         # Third area
-        (2300, -5000, 500, 2000),
-        (-1200, -6000, 6000, 1000),
-        (-2200, -7000, 1000, 2000),
-        (4800, -7000, 1500, 3000),
+        (2300, -5000, 500, 2000), # hallway to third area
+        (-1200, -6000, 6000, 1000), # hallway between duckling rooms
+        (-2200, -7000, 1000, 2000), # left duckling room
+        (4800, -7000, 1500, 3000), # right duckling room
         # Fourth area
-        (2300, -8000, 500, 2000),
-        (-1200, -10000, 4000, 2000),
-        (-1200, -11000, 500, 1000),
-        (-3700, -14000, 13000, 3000),
-        (4300, -11000, 500, 3000),
-        (2800, -8500, 1500, 500),
+        (2300, -8000, 500, 2000), # hallway to fourth area
+        (-1200, -10000, 4000, 2000), # puzzle room
+        (-1200, -11000, 500, 1000), # hallway to rapids
+        (-3700, -14000, 13000, 3000), # rapids
+        (4300, -11000, 500, 3000), # one-way back to puzzle room
+        (2800, -8500, 1500, 500), # one-way back to puzzle room
         # Fifth area
-        (8800, -11000, 500, 7000),
-        (6300, -7000, 2500, 500),
-        (8000, -4000, 2500, 2000),
+        (8800, -11000, 500, 7000), # hallway to fifth area
+        (6300, -7000, 2500, 500), # shortcut to third area
+        (8000, -4000, 2500, 2000), # lots of ducklings
         # Sixth area (Boss)
-        (2800, -1500, 3000, 500),
-        (5300, -1000, 500, 5000),
-        (4300, 3000, 5000, 5000)
+        (2800, -1500, 3000, 500), # hallway to boss room
+        (5300, -1000, 500, 5000), # hallway to boss room
+        (4300, 3000, 5000, 5000) # boss room
     ]
 
     debug_colliders = True
-    colliders = [
+    colliders = [ # numbered to keep up with them because I don't have time to label
         (-1200, 0, 2200, 1000), #1
         (1500, 0, 2300, 3000), #2
         (-1200, -5000, 3500, 2000), #3
@@ -105,13 +105,17 @@ def MainGame(game):
 
     doors = [
         Door(1000, 900, 500, 100, boids_needed = 1), # first area to second
-        
+        Door(2300, -3100, 500, 100, boids_needed = 8), # second area to third
+        Door(2300, -6100, 500, 100, boids_needed = 21), # third area to fourth
+        Door(4000, -1500, 100, 500, boids_needed = 40), # fifth area to boss
     ]
 
     boid_positions = [
-        (500, 0), #1
-        (600, -50), #2
-        (400, 50), #3
+        # first area, 1
+        (150, 0),
+        # second area, 7
+        # third area, 13
+        # fifth area, 19
     ]
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
@@ -134,7 +138,7 @@ def MainGame(game):
         3: { 0: {}, 1: {}, 2: {} }
     }
 
-    for i in range(3):
+    for i in range(4):
         pos = Vec2(boid_positions[i][0], boid_positions[i][1])
         vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
         accel = Vec2(1,1)
@@ -215,12 +219,14 @@ def MainGame(game):
                 py.draw.rect(window, CYAN, bg)
                 seen_rects.append(bg)
 
+        active_cols = []
         for col in col_rects:
             col.x -= rounded_flock_velx
             col.y -= rounded_flock_vely
 
             if debug_colliders and (col.x + col.w >= 0 and col.y + col.h >= 0):
                 py.draw.rect(window, RED, col, 10)
+                active_cols.append(col)
 
         for door in doors:
             door.rect.x -= rounded_flock_velx
@@ -236,7 +242,6 @@ def MainGame(game):
                 for boid in sections[x][y].values():
                     
                     #Add forces to boid
-                    print(Normalize(flock.screen_pos - boid.pos))
                     if Normalize(flock.screen_pos - boid.pos) < flock.range:
                         if not boid.in_flock:
                             boid.in_flock = True
@@ -251,8 +256,7 @@ def MainGame(game):
                     boid.Flock(sections[x][y], flock)
 
                     #Update Boid
-                    boid.pos -= flock.vel
-                    boid.Update()
+                    boid.Update(flock)
                     sections = boid.UpdateSections(sections)
 
                     #Draw Boid
@@ -263,7 +267,7 @@ def MainGame(game):
         flock.AddFlockCenterForce(movement_vector)
         
         # COLLISIONS
-        flock.CheckWallCollisions(col_rects)
+        flock.CheckWallCollisions(active_cols)
         flock.CheckDoorCollisions(doors)
 
         flock.Update()
@@ -346,7 +350,7 @@ def PerformanceTest(performance_test):
         vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
         accel = Vec2(1,1)
         
-        boid = Boid(pos, vel, accel, blue_arrow_img, 1, 0, 1600, False)
+        boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=False)
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
         boid_count += 1
 
@@ -369,7 +373,7 @@ def PerformanceTest(performance_test):
                     vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
                     accel = Vec2(1,1)
                     
-                    boid = Boid(pos, vel, accel, blue_arrow_img, 1, 0, 1600, False)
+                    boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=False)
                     sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
                     boid_count +=1 
             
