@@ -14,8 +14,8 @@ import random, sys, math
 from colors import *
 from boid import *
 from flock import *
+from enemy import *
 from cache import *
-from door import *
 from ray import *
 from helpfunctions import *
 
@@ -39,84 +39,24 @@ font_arial30 = py.font.SysFont('Arial', 30)
 
 def MainGame(game):
     map = [
-        # First area
-        (0, 1000, 1500, 2000), # start room
-        (-1200, 1000, 1200, 1000), # tutorial room (with first duckling)
-        # Second area
-        (1000, 0, 500, 1000), # hallway to second area
-        (-1200, -3000, 4000, 3000), # second area main puzzle room
-        (-2200, -4000, 1000, 2000), # left room with ducklings
-        (2800, -500, 1000, 500), # right hallway 
-        (3800, -500, 1000, 1500), # right room with ducklings
-        # Third area
-        (2300, -5000, 500, 2000), # hallway to third area
-        (-1200, -6000, 6000, 1000), # hallway between duckling rooms
-        (-2200, -7000, 1000, 2000), # left duckling room
-        (4800, -7000, 1500, 3000), # right duckling room
-        # Fourth area
-        (2300, -8000, 500, 2000), # hallway to fourth area
-        (-1200, -10000, 4000, 2000), # puzzle room
-        (-1200, -11000, 500, 1000), # hallway to rapids
-        (-3700, -14000, 13000, 3000), # rapids
-        (4300, -11000, 500, 3000), # one-way back to puzzle room
-        (2800, -8500, 1500, 500), # one-way back to puzzle room
-        # Fifth area
-        (8800, -11000, 500, 7000), # hallway to fifth area
-        (6300, -7000, 2500, 500), # shortcut to third area
-        (8000, -4000, 2500, 2000), # lots of ducklings
-        # Sixth area (Boss)
-        (2800, -1500, 3000, 500), # hallway to boss room
-        (5300, -1000, 500, 5000), # hallway to boss room
-        (4300, 3000, 5000, 5000) # boss room
+        py.Rect(-1000, -1000, 2000, 2000),
     ]
 
     debug_colliders = True
-    colliders = [ # numbered to keep up with them because I don't have time to label
-        (-1200, 0, 2200, 1000), #1
-        (1500, 0, 2300, 3000), #2
-        (-1200, -5000, 3500, 2000), #3
-        (-2200, -5000, 1000, 1000), #4
-        (-1200, -8000, 3500, 2000), #5
-        (-3700, -11000, 2500, 4000), #6
-        (-3700, -7000, 1500, 5000), #7
-        (-3700, -2000, 2500, 4000), #8
-        (-3700, 2000, 3700, 1000), #9
-        (-1200, 3000, 2700, 1000), #10
-        (1500, 3000, 2800, 6000), #11
-        (3800, 1000, 1500, 2000), #12
-        (4800, -500, 500, 1500), #13
-        (2800, -1000, 2500, 500), #14
-        (4300, 8000, 6000, 1000), #15
-        (9300, 3000, 1000, 5000), #16
-        (5800, -1500, 4500, 4500), #17
-        (2800, -4000, 5200, 2500), #18
-        (2800, -5000, 2000, 1000), #19
-        (6300, -6500, 2500, 2500), #20
-        (8000, -2000, 3500, 500), #21
-        (10500, -4000, 1000, 2000), #22
-        (9300, -14000, 1800, 10000), #23
-        (-3700, -15000, 14800, 1000), #24
-        (-4700, -15000, 1000, 5000), #25
-        (-700, -11000, 5000, 1000), #26
-        (2800, -10000, 1500, 1500), #27
-        (4800, -11000, 4000, 4000), #28
-        (2800, -8000, 2000, 2000), #29
+    colliders = [
+        py.Rect(-1000, -2000, 2000, 1000), #top
+        py.Rect(-1000, 1000, 2000, 1000), #bottom
+        py.Rect(-2000, -1000, 1000, 2000), #left
+        py.Rect(1000, -1000, 1000, 2000), #right
     ]
 
-    doors = [
-        Door(1000, 900, 500, 100, boids_needed = 1), # first area to second
-        Door(2300, -3100, 500, 100, boids_needed = 8), # second area to third
-        Door(2300, -6100, 500, 100, boids_needed = 21), # third area to fourth
-        Door(4000, -1500, 100, 500, boids_needed = 40), # fifth area to boss
-    ]
-
-    boid_positions = [
-        # first area, 1
-        (150, 0),
-        # second area, 7
-        # third area, 13
-        # fifth area, 19
-    ]
+    map_offset = [1000, 0]
+    for bg in map:
+        bg.x += map_offset[0]
+        bg.y += map_offset[1]
+    for col in colliders:
+        col.x += map_offset[0]
+        col.y += map_offset[1]
 
     circle_15px_img = cache.LoadImage('resources/circle_15px.png')
     circle_50px_img = cache.LoadImage('resources/circle_50px.png')
@@ -138,38 +78,17 @@ def MainGame(game):
         3: { 0: {}, 1: {}, 2: {} }
     }
 
-    for i in range(4):
-        pos = Vec2(boid_positions[i][0], boid_positions[i][1])
+    flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 10, 200, ducky_large_img)
+
+    for i in range(25):
+        pos = Vec2(flock.screen_pos.x + random.randint(-100,100), flock.screen_pos.y + random.randint(-100,100))
         vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
         accel = Vec2(1,1)
         
         boid = Boid(pos, vel, accel, current_boid_img)
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
 
-    flock = Flock(Vec2(screen_width/2, screen_height - 300), Vec2(0,0), 5, 200, ducky_large_img)
-
     flock.Draw(window)
-
-    bg_rects = []
-    for bg in map:
-        bg_rect = py.Rect(bg[0]/2, bg[1]/2, bg[2]/2, bg[3]/2)
-        bg_rects.append(bg_rect)
-
-    col_rects = []
-    for col in colliders:
-        col_rect = py.Rect(col[0]/2, col[1]/2, col[2]/2, col[3]/2)
-        col_rects.append(col_rect)
-
-    map_offset = [500, -700]
-    for bg in bg_rects:
-        bg.x += map_offset[0]
-        bg.y += map_offset[1]
-    for col in col_rects:
-        col.x += map_offset[0]
-        col.y += map_offset[1]
-    for door in doors:
-        door.rect.x += map_offset[0]
-        door.rect.y += map_offset[1]
 
     while game:
         clock.tick(fps)
@@ -211,7 +130,7 @@ def MainGame(game):
         rounded_flock_vely = round(flock.vel.y)
 
         seen_rects = []
-        for bg in bg_rects:
+        for bg in map:
             bg.x -= rounded_flock_velx
             bg.y -= rounded_flock_vely
 
@@ -220,21 +139,13 @@ def MainGame(game):
                 seen_rects.append(bg)
 
         active_cols = []
-        for col in col_rects:
+        for col in colliders:
             col.x -= rounded_flock_velx
             col.y -= rounded_flock_vely
 
             if debug_colliders and (col.x + col.w >= 0 and col.y + col.h >= 0):
                 py.draw.rect(window, RED, col, 10)
                 active_cols.append(col)
-
-        for door in doors:
-            door.rect.x -= rounded_flock_velx
-            door.rect.y -= rounded_flock_vely
-            door.Draw(window)
-
-        #water_rect = window.blit(water_bg_img, (0, bg_pos))
-        #walls_rect = window.blit(walls_bg_img, (0, bg_pos))
 
         for x in sections.keys():
             for y in sections[x].keys():
@@ -260,7 +171,7 @@ def MainGame(game):
                     sections = boid.UpdateSections(sections)
 
                     #Draw Boid
-                    direction_ray = Ray(boid.pos, boid.vel, 15)
+                    #direction_ray = Ray(boid.pos, boid.vel, 15)
                     #direction_ray.DebugDraw(window)
                     boid_rect = boid.Draw(window)
 
@@ -268,7 +179,6 @@ def MainGame(game):
         
         # COLLISIONS
         flock.CheckWallCollisions(active_cols)
-        flock.CheckDoorCollisions(doors)
 
         flock.Update()
         flock_rect = flock.Draw(window)
@@ -277,8 +187,6 @@ def MainGame(game):
         text_rect1 = window.blit(fps_text, (200, 50))
         text_rect2 = window.blit(flock_boid_num_text, (200, 100))
         py.display.update()
-
-
 
 def Menu(menu, game, performance_test):
     play_button = py.Rect(screen_width/2 - 100, screen_height/2 - 100, 200, 50)

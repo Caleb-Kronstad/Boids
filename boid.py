@@ -26,8 +26,6 @@ class Boid:
         this.accel = accel
         this.mass = mass
 
-        this.origin = Vec2(pos.x, pos.y)
-
         this.rays = rays
 
         this.cohesion_enabled = True
@@ -71,7 +69,7 @@ class Boid:
 
             if dist < flock_params.cohesion_distance:
                 cohesion_force += other.pos
-                if flock != None and this.in_flock:
+                if flock != None:
                     cohesion_force += flock.screen_pos - other.pos
                 cohesion_neighbors += 1
 
@@ -126,20 +124,16 @@ class Boid:
         return temp_sections
 
     def Update(this, flock=None):
-        this.accel = this.forces / this.mass
-        this.vel = LimitMagnitude(this.vel + this.accel, this.max_speed)
-
-        this.pos += this.vel
-        if flock != None:
-            this.pos -= flock.vel
-            this.origin -= flock.vel
-            if not this.in_flock and Normalize(this.origin - this.pos) > 100:
-                this.vel *= -1
+        this.accel = this.forces / this.mass # calculate the acceleration based on current frame forces and boid's mass
+        this.vel = LimitMagnitude(this.vel + this.accel, this.max_speed) # update velocity based on acceleration, but limit the magnitude of the vector to the max speed
+        this.pos += this.vel # update position based on current velocity
+        if flock != None: this.pos -= flock.vel
         this.forces = Vec2(0,0) # reset forces for next frame
 
-        this.img = py.transform.rotate(this.saved_img, np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))) # rotate boid image -- due to py's skewed coordinate system the rotation has to be altered slightly (hence the negative y axis)
+        this.img = py.transform.rotate(this.saved_img, (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180)))) # rotate boid image -- due to pygame's skewed coordinate system the rotation has to be altered slightly (hence the negative y axis)
 
-        if this.bound_to_window == False: # to keep the boids on screen in the performance test
+        # keep the boids on screen in the performance test
+        if this.bound_to_window == False: 
             if this.pos.x > 1600:
                 this.pos.x = 0
             elif this.pos.x < 0:
@@ -149,6 +143,7 @@ class Boid:
             elif this.pos.y < 0:
                 this.pos.y = 900
 
+        # find which section the boid is currently in for optimization (only test other boids in the same section)
         this.section = FindBoidSection(this)
 
     def Draw(this, window):

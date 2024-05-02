@@ -80,25 +80,6 @@ class Flock:
         this.max_speed = this.saved_max_speed
         return False
     
-    def CheckDoorCollisions(this, doors):
-        this.collide_rect = this.rect
-        multiplier = 5
-        if (this.vel.x < 0 and this.vel.y > 0) or (this.vel.x < 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y > 0) or (this.vel == Vec2(0,0)):
-            this.collide_rect.width /= 2
-            this.collide_rect.height /= 2 
-            this.collide_rect.x += this.collide_rect.width/2
-            this.collide_rect.y += this.collide_rect.height/2
-            multiplier = 15
-
-        for door in doors:
-            if this.collide_rect.colliderect(door.rect) and door.TryOpen(this) == False and this.stunned == False:
-                this.CollisionResponse(multiplier)
-                return True
-        this.has_collision = False
-        this.max_speed = this.saved_max_speed
-        return False
-
-    
     def CollisionResponse(this, multiplier):
         this.forces = Vec2(0,0)
         this.vel = (-this.last_vel) * multiplier
@@ -114,8 +95,8 @@ class Flock:
                 this.stunned = False
                 this.stun_timer = this.stun_length
         
-        if this.vel != Vec2(0,0):
-            this.angle = np.degrees(np.arctan2(-this.vel.y, this.vel.x) - np.radians(90))
+        if this.vel != Vec2(0,0): # prevents angle from immediately going to zero when at a standstill, as we'd rather have it as the last angle when moving
+            this.angle = (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180))) # calculate the angle for the image to rotate
         accel = this.forces / this.mass
         this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
         this.pos += this.vel
