@@ -18,15 +18,13 @@ class FlockParams():
         this.cohesion_factor = cohesion_factor
 
 class Boid:
-    def __init__(this, pos, vel, accel, img, rays=None, mass=1, bound_to_window = True):
+    def __init__(this, pos, vel, accel, img, mass=1, bound_to_window = True):
         this.id = random.randint(-sys.maxsize-1, sys.maxsize)
 
         this.in_flock = False
         this.pos = pos
         this.accel = accel
         this.mass = mass
-
-        this.rays = rays
 
         this.cohesion_enabled = True
         this.alignment_enabled = True

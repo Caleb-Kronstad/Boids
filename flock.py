@@ -37,8 +37,13 @@ class Flock:
         this.saved_img = img
 
         this.rect = this.img.get_rect(center = this.screen_pos)
+
+        #Abilities
+        this.dashing = False
+        this.dash_cooldown = 20
+        this.dash_timer = this.dash_cooldown
     
-    def AddFlockCenterForce(this, force=Vec2(0,0)):
+    def AddForce(this, force=Vec2(0,0)):
         this.forces += force
     
     def Movement(this, movement_vector):
@@ -77,7 +82,6 @@ class Flock:
             return True
         
         this.has_collision = False
-        this.max_speed = this.saved_max_speed
         return False
     
     def CollisionResponse(this, multiplier):
@@ -88,19 +92,37 @@ class Flock:
         this.max_speed = 10
         this.stunned = True
 
+    def Dash(this, force, speed):
+        if this.dashing: return
+
+        this.AddForce(force)
+        this.max_speed = 10
+        this.dashing = True
+
     def Update(this):
         if this.stunned:
             this.stun_timer -= 1
             if this.stun_timer <= 0:
+                this.max_speed = this.saved_max_speed
                 this.stunned = False
                 this.stun_timer = this.stun_length
+
+        if this.dashing:
+            this.dash_cooldown -= 1
+            if this.dash_cooldown <= 0:
+                this.dashing = False
+                this.dash_cooldown = this.dash_timer
+                if not this.stunned: 
+                    this.max_speed = this.saved_max_speed
+                
         
         if this.vel != Vec2(0,0): # prevents angle from immediately going to zero when at a standstill, as we'd rather have it as the last angle when moving
             this.angle = (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180))) # calculate the angle for the image to rotate
         accel = this.forces / this.mass
         this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
         this.pos += this.vel
-        this.last_vel = this.vel
+        if this.vel != this.last_vel:
+            this.last_vel = this.vel
             
         this.forces = Vec2(0,0)
 

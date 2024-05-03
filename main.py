@@ -78,7 +78,7 @@ def MainGame(game):
         3: { 0: {}, 1: {}, 2: {} }
     }
 
-    flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 10, 200, ducky_large_img)
+    flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 5, 200, ducky_large_img)
 
     for i in range(25):
         pos = Vec2(flock.screen_pos.x + random.randint(-100,100), flock.screen_pos.y + random.randint(-100,100))
@@ -94,6 +94,21 @@ def MainGame(game):
         clock.tick(fps)
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK)
         flock_boid_num_text = font_arial30.render("Ducks Collected: " + str(flock.num_boids), True, BLACK)
+
+        #Key input
+        keys = py.key.get_pressed()
+
+        #Movement force based on WASD keys pressed
+        movement_vector = Vec2(0,0)
+        if flock.stunned == False:
+            if keys[py.K_w]:
+                movement_vector.y -= 1
+            if keys[py.K_s]:
+                movement_vector.y += 1
+            if keys[py.K_a]:
+                movement_vector.x -= 1
+            if keys[py.K_d]:
+                movement_vector.x += 1
         
         for e in py.event.get():
             if e.type == py.QUIT: 
@@ -103,23 +118,11 @@ def MainGame(game):
             #Get user input
             if e.type == py.KEYDOWN:
                 key = e.key
+                if key == py.K_SPACE:
+                    print("DASH")
+                    flock.Dash(Vec2(np.cos(np.arctan2(flock.vel.y, flock.vel.x)), np.sin(np.arctan2(flock.vel.y, flock.vel.x))) * 50, speed = 10) # player dashes in the direction they are moving/looking
             if e.type == py.KEYUP:
                 key = e.key
-
-        #Key input
-        keys = py.key.get_pressed()
-
-        #Movement force based on WASD keys pressed
-        movement_vector = Vec2(0,0)
-        if flock.stunned == False:
-            if keys[py.K_w]:
-                movement_vector.y -= flock.max_speed
-            if keys[py.K_s]:
-                movement_vector.y += flock.max_speed
-            if keys[py.K_a]:
-                movement_vector.x -= flock.max_speed
-            if keys[py.K_d]:
-                movement_vector.x += flock.max_speed 
 
         flock.Movement(movement_vector)
 
@@ -173,9 +176,9 @@ def MainGame(game):
                     #Draw Boid
                     #direction_ray = Ray(boid.pos, boid.vel, 15)
                     #direction_ray.DebugDraw(window)
-                    boid_rect = boid.Draw(window)
+                    boid.Draw(window)
 
-        flock.AddFlockCenterForce(movement_vector)
+        flock.AddForce(movement_vector * flock.max_speed)
         
         # COLLISIONS
         flock.CheckWallCollisions(active_cols)
