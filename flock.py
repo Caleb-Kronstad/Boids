@@ -8,16 +8,32 @@ from boid import *
 from helpfunctions import *
 from ray import *
 
+class FlockParams():
+    def __init__(this, separation_distance = 50, alignment_distance = 100, cohesion_distance = 200, separation_factor = 1, alignment_factor = 1, cohesion_factor = 1):
+        this.separation_distance = separation_distance
+        this.alignment_distance = alignment_distance
+        this.cohesion_distance = cohesion_distance
+        this.separation_factor = separation_factor
+        this.alignment_factor = alignment_factor
+        this.cohesion_factor = cohesion_factor
+
 class Flock:
-    def __init__(this, pos, vel, max_speed, range, img, mass=1):
-        this.boids = {}
+
+    ###--- INIT FUNCTION
+
+    def __init__(this, pos, vel, speed, range, img, mass=1): 
+        # initialize member variables
         this.pos = pos
-        this.vel = LimitMagnitude(vel, max_speed)
-        this.max_speed = max_speed
-        this.saved_max_speed = max_speed
+        this.speed = speed
+        this.saved_speed = speed
+        this.max_speed = 50
+        this.vel = LimitMagnitude(vel, this.max_speed)
         this.range = range
         this.mass = mass
 
+        this.boid_damage = 1
+
+        this.num_boids = 0
         this.last_vel = vel
 
         this.collision_type = None
@@ -38,11 +54,53 @@ class Flock:
 
         this.rect = this.img.get_rect(center = this.screen_pos)
 
-        #Abilities
+        #Upgrades
         this.dashing = False
-        this.dash_cooldown = 20
+        this.dash_cooldown = 15
         this.dash_timer = this.dash_cooldown
+
+        this.can_launch = True
+        this.launch_cooldown = 15
+        this.launch_timer = this.launch_cooldown
+        
+    ###---
+
+    ###--- UPGRADES
+
+    # Dash
+    def Dash(this, force):
+        if this.dashing: return # make sure not already dashing
+        this.AddForce(force) # add dashing force
+        this.speed = this.max_speed / 15 # change speed 
+        this.dashing = True # dashing flag set to true
+    def DashCooldown(this):
+        if this.dashing: # check if dashing
+            this.dash_cooldown -= 1 # count down by 1 each frame
+            if this.dash_cooldown == 0: # check cooldown equals than 0 
+                if this.stunned == False: # check not stunned
+                    this.speed = this.saved_speed # set speed to saved speed
+            if this.dash_cooldown <= -15: # continue past 0
+                this.dashing = False # no longer dashing
+                this.dash_cooldown = this.dash_timer # reset timer
     
+    # Launch duckling
+    def LaunchDuckling(this, force, speed, boid):
+        if this.can_launch == False: return # make sure can launch duckling
+        boid.vel = LimitMagnitude(force, speed)
+        boid.max_speed = speed
+        boid.in_flock = False
+        this.can_launch = False
+    def LaunchCooldown(this):
+        if this.can_launch == False:
+            this.launch_cooldown -= 1
+            if this.launch_cooldown == 0:
+                this.can_launch = True
+                this.launch_cooldown = this.launch_timer
+
+    ###---
+    
+
+    ###--- MAIN FUNCTIONS
     def AddForce(this, force=Vec2(0,0)):
         this.forces += force
     
@@ -67,6 +125,8 @@ class Flock:
                     this.vel.x = 0
     
     def CheckWallCollisions(this, walls):
+        if this.stunned == False: return
+
         this.collide_rect = this.rect
         multiplier = 5
         if (this.vel.x < 0 and this.vel.y > 0) or (this.vel.x < 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y > 0) or (this.vel == Vec2(0,0)):
@@ -77,7 +137,7 @@ class Flock:
             multiplier = 15
 
         collide_index = this.collide_rect.collidelist(walls)
-        if collide_index != -1 and this.stunned == False:
+        if collide_index != -1:
             this.CollisionResponse(multiplier)
             return True
         
@@ -89,47 +149,35 @@ class Flock:
         this.vel = (-this.last_vel) * multiplier
 
         this.has_collision = True
-        this.max_speed = 10
+        this.speed = this.max_speed / 5
         this.stunned = True
-
-    def Dash(this, force, speed):
-        if this.dashing: return
-
-        this.AddForce(force)
-        this.max_speed = 10
-        this.dashing = True
 
     def Update(this):
         if this.stunned:
             this.stun_timer -= 1
             if this.stun_timer <= 0:
-                this.max_speed = this.saved_max_speed
+                this.speed = this.saved_speed
                 this.stunned = False
                 this.stun_timer = this.stun_length
 
-        if this.dashing:
-            this.dash_cooldown -= 1
-            if this.dash_cooldown <= 0:
-                this.dashing = False
-                this.dash_cooldown = this.dash_timer
-                if not this.stunned: 
-                    this.max_speed = this.saved_max_speed
-                
+        this.DashCooldown()
+        this.LaunchCooldown()
         
         if this.vel != Vec2(0,0): # prevents angle from immediately going to zero when at a standstill, as we'd rather have it as the last angle when moving
             this.angle = (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180))) # calculate the angle for the image to rotate
         accel = this.forces / this.mass
-        this.vel = LimitMagnitude(this.vel + accel, this.max_speed)
+        this.vel = LimitMagnitude(this.vel + accel, this.max_speed / this.speed)
         this.pos += this.vel
         if this.vel != this.last_vel:
             this.last_vel = this.vel
             
-        this.forces = Vec2(0,0)
+        this.forces = Vec2(0,0) # reset forces vector
 
-        #this.furthest_boid = this.FindFurthestBoidFromFlockCenter()
         this.img = py.transform.rotate(this.saved_img, this.angle)
 
     def Draw(this, window):
         this.rect = this.img.get_rect(center = this.screen_pos)
         temp_rect = window.blit(this.img, this.rect)
         return temp_rect
+    
+    ###---

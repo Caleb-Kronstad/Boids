@@ -7,18 +7,10 @@ import random, sys
 from colors import *
 from ray import *
 from helpfunctions import *
-
-class FlockParams():
-    def __init__(this, separation_distance = 50, alignment_distance = 100, cohesion_distance = 200, separation_factor = 1, alignment_factor = 1, cohesion_factor = 1):
-        this.separation_distance = separation_distance
-        this.alignment_distance = alignment_distance
-        this.cohesion_distance = cohesion_distance
-        this.separation_factor = separation_factor
-        this.alignment_factor = alignment_factor
-        this.cohesion_factor = cohesion_factor
+from flock import *
 
 class Boid:
-    def __init__(this, pos, vel, accel, img, mass=1, bound_to_window = True):
+    def __init__(this, pos, vel, accel, img, mass=1, bound_to_window = False):
         this.id = random.randint(-sys.maxsize-1, sys.maxsize)
 
         this.in_flock = False
@@ -42,11 +34,16 @@ class Boid:
 
         this.img = img
         this.saved_img = img
+        this.rect = this.img.get_rect(center = this.pos)
 
         this.forces = accel * mass
 
         this.section = FindBoidSection(this)
         this.previous_section = this.section
+
+    def CheckCollisions(this, colliders):
+        collide_index = this.rect.collidelist(colliders)
+        return collide_index
 
     def Flock(this, boids, flock=None, flock_params = FlockParams()):
         alignment_force = Vec2(0,0)
@@ -56,57 +53,111 @@ class Boid:
         cohesion_neighbors = 0
         separation_neighbors = 0
 
-        for other in boids.values():
-            if other == this: continue
+        if flock==None:
+            for other in boids.values():
+                if other == this: continue
 
-            dist = Normalize(other.pos-this.pos)
+                dist = Normalize(other.pos-this.pos)
 
-            if dist < flock_params.alignment_distance:
-                alignment_force += other.vel
-                alignment_neighbors += 1
+                if dist < flock_params.alignment_distance:
+                    alignment_force += other.vel
+                    alignment_neighbors += 1
 
-            if dist < flock_params.cohesion_distance:
-                cohesion_force += other.pos
-                if flock != None:
-                    cohesion_force += flock.screen_pos - other.pos
-                cohesion_neighbors += 1
+                if dist < flock_params.cohesion_distance:
+                    cohesion_force += other.pos
+                    if flock != None:
+                        cohesion_force += flock.screen_pos - other.pos
+                    cohesion_neighbors += 1
 
-            if dist < flock_params.separation_distance:
-                diff = this.pos - other.pos
-                if dist < 0:
-                    dist = 0.000001
+                if dist < flock_params.separation_distance:
+                    diff = this.pos - other.pos
+                    if dist == 0:
+                        dist = 0.000001
                     diff *= 1 / dist
-                separation_force += diff
-                separation_neighbors += 1
-        
-        if alignment_neighbors > 0:
-            alignment_force /= alignment_neighbors
-            alignment_force = SetMagnitude(alignment_force, this.max_speed)
-            alignment_force -= this.vel
-            alignment_force = LimitMagnitude(alignment_force, this.max_force) * flock_params.alignment_factor
+                    separation_force += diff
+                    separation_neighbors += 1
+            
+            if alignment_neighbors > 0:
+                alignment_force /= alignment_neighbors
+                alignment_force = SetMagnitude(alignment_force, this.max_speed)
+                alignment_force -= this.vel
+                alignment_force = LimitMagnitude(alignment_force, this.max_force) * flock_params.alignment_factor
 
-        if cohesion_neighbors > 0:
-            cohesion_force /= cohesion_neighbors
-            cohesion_force -= this.pos
-            cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
-            cohesion_force -= this.vel
-            cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
-        
-        if separation_neighbors > 0:
-            separation_force /= separation_neighbors
-            separation_force = SetMagnitude(separation_force, this.max_speed)
-            separation_force -= this.vel
-            separation_force = LimitMagnitude(separation_force, this.max_force) * flock_params.separation_factor
+            if cohesion_neighbors > 0:
+                cohesion_force /= cohesion_neighbors
+                cohesion_force -= this.pos
+                cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
+                cohesion_force -= this.vel
+                cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
+            
+            if separation_neighbors > 0:
+                separation_force /= separation_neighbors
+                separation_force = SetMagnitude(separation_force, this.max_speed)
+                separation_force -= this.vel
+                separation_force = LimitMagnitude(separation_force, this.max_force) * flock_params.separation_factor
 
-        if cohesion_neighbors == 0 and flock != None and this.in_flock:
-            cohesion_force += flock.screen_pos - this.pos
-            cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
-            cohesion_force -= this.vel
-            cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
+            if cohesion_neighbors == 0 and flock != None and this.in_flock:
+                cohesion_force += flock.screen_pos - this.pos
+                cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
+                cohesion_force -= this.vel
+                cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
 
-        if this.cohesion_enabled: this.AddForce(cohesion_force)
-        if this.alignment_enabled: this.AddForce(alignment_force)
-        if this.separation_enabled: this.AddForce(separation_force)
+            if this.cohesion_enabled: this.AddForce(cohesion_force)
+            if this.alignment_enabled: this.AddForce(alignment_force)
+            if this.separation_enabled: this.AddForce(separation_force)
+        else:
+            for other in boids:
+                if other == this: continue
+
+                dist = Normalize(other.pos-this.pos)
+
+                if dist < flock_params.alignment_distance:
+                    alignment_force += other.vel
+                    alignment_neighbors += 1
+
+                if dist < flock_params.cohesion_distance:
+                    cohesion_force += other.pos
+                    if flock != None:
+                        cohesion_force += flock.screen_pos - other.pos
+                    cohesion_neighbors += 1
+
+                if dist < flock_params.separation_distance:
+                    diff = this.pos - other.pos
+                    if dist == 0:
+                        dist = 0.000001
+                    diff *= 1 / dist
+                    separation_force += diff
+                    separation_neighbors += 1
+            
+            if alignment_neighbors > 0:
+                alignment_force /= alignment_neighbors
+                alignment_force = SetMagnitude(alignment_force, this.max_speed)
+                alignment_force -= this.vel
+                alignment_force = LimitMagnitude(alignment_force, this.max_force) * flock_params.alignment_factor
+
+            if cohesion_neighbors > 0:
+                cohesion_force /= cohesion_neighbors
+                cohesion_force -= this.pos
+                cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
+                cohesion_force -= this.vel
+                cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
+            
+            if separation_neighbors > 0:
+                separation_force /= separation_neighbors
+                separation_force = SetMagnitude(separation_force, this.max_speed)
+                separation_force -= this.vel
+                separation_force = LimitMagnitude(separation_force, this.max_force) * flock_params.separation_factor
+
+            if cohesion_neighbors == 0 and flock != None and this.in_flock:
+                cohesion_force += flock.screen_pos - this.pos
+                cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
+                cohesion_force -= this.vel
+                cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
+
+            if this.in_flock:
+                if this.cohesion_enabled: this.AddForce(cohesion_force)
+                if this.alignment_enabled: this.AddForce(alignment_force)
+                if this.separation_enabled: this.AddForce(separation_force)
 
     def AddForce(this, force = Vec2(0,0)):
         this.forces += force
@@ -131,7 +182,7 @@ class Boid:
         this.img = py.transform.rotate(this.saved_img, (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180)))) # rotate boid image -- due to pygame's skewed coordinate system the rotation has to be altered slightly (hence the negative y axis)
 
         # keep the boids on screen in the performance test
-        if this.bound_to_window == False: 
+        if this.bound_to_window == True:
             if this.pos.x > 1600:
                 this.pos.x = 0
             elif this.pos.x < 0:
@@ -142,7 +193,8 @@ class Boid:
                 this.pos.y = 900
 
         # find which section the boid is currently in for optimization (only test other boids in the same section)
-        this.section = FindBoidSection(this)
+        if this.bound_to_window == True:
+            this.section = FindBoidSection(this)
 
     def Draw(this, window):
         this.rect = this.img.get_rect(center = this.pos)

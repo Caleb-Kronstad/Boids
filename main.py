@@ -4,6 +4,12 @@
 # Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect. 
 ##---
 
+### -- IMPORTANT --
+# - The code for the performance test is much easier to understand (less complex) and is better for observing the specifics of implementing boids in code
+# - The performance test is also better optimized as it utilizes things such as dictionaries for the boids rather than lists, which have much faster lookups
+
+###
+
 #import libraries to be used
 import pygame as py
 from pygame import Vector2 as Vec2
@@ -38,6 +44,14 @@ font_arial30 = py.font.SysFont('Arial', 30)
 ## MAIN GAME
 
 def MainGame(game):
+    circle_15px_img = cache.LoadImage('resources/circle_15px.png')
+    circle_50px_img = cache.LoadImage('resources/circle_50px.png')
+    blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
+    yellow_arrow_img = cache.LoadImage('resources/yellow_arrow.png')
+    ducky_small_img = cache.LoadImage('resources/ducky_small.png')
+    ducky_medium_img = cache.LoadImage('resources/ducky_medium.png')
+    ducky_large_img = cache.LoadImage('resources/ducky_large.png')
+
     map = [
         py.Rect(-1000, -1000, 2000, 2000),
     ]
@@ -58,36 +72,33 @@ def MainGame(game):
         col.x += map_offset[0]
         col.y += map_offset[1]
 
-    circle_15px_img = cache.LoadImage('resources/circle_15px.png')
-    circle_50px_img = cache.LoadImage('resources/circle_50px.png')
-    blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
-    yellow_arrow_img = cache.LoadImage('resources/yellow_arrow.png')
-    water_bg_img = cache.LoadImage('resources/moving_water.png')
-    walls_bg_img = cache.LoadImage('resources/walls.png')
-    ducky_small_img = cache.LoadImage('resources/ducky_small.png')
-    ducky_medium_img = cache.LoadImage('resources/ducky_medium.png')
-    ducky_large_img = cache.LoadImage('resources/ducky_large.png')
+    flock_params = FlockParams(separation_distance = 50, alignment_distance = 100, cohesion_distance = 200, separation_factor = 1, alignment_factor = 1, cohesion_factor = 1)
 
-    current_boid_img = ducky_small_img
-    flock_params = FlockParams(50, 100, 200, 15, 1, 1)
+    boids = []
+    removed_boids = []
 
-    sections = {
-        0: { 0: {}, 1: {}, 2: {} },
-        1: { 0: {}, 1: {}, 2: {} },
-        2: { 0: {}, 1: {}, 2: {} },
-        3: { 0: {}, 1: {}, 2: {} }
-    }
-
-    flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 5, 200, ducky_large_img)
+    flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 10, 200, ducky_large_img)
 
     for i in range(25):
         pos = Vec2(flock.screen_pos.x + random.randint(-100,100), flock.screen_pos.y + random.randint(-100,100))
         vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
         accel = Vec2(1,1)
         
-        boid = Boid(pos, vel, accel, current_boid_img)
-        sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
+        boid = Boid(pos, vel, accel, ducky_small_img)
+        boid.in_flock = True
+        boids.append(boid)
 
+    enemies = []
+
+    for i in range(2):
+        pos = Vec2(random.randint(200,400), random.randint(200,400))
+        vel = Vec2(0,0) #Vec2(random.uniform(-1,1), random.uniform(-1,1))
+        accel = Vec2(0,0)
+
+        enemy = Enemy(pos, vel, accel, 1, circle_50px_img, circle_50px_img)
+        enemies.append(enemy)
+
+    flock.num_boids = len(boids)
     flock.Draw(window)
 
     while game:
@@ -116,11 +127,19 @@ def MainGame(game):
                 sys.exit()
 
             #Get user input
+            if e.type == py.MOUSEBUTTONDOWN:
+                mouse_pos = py.mouse.get_pos()
+                flock.num_boids = len(boids)
+                if len(boids) > 0:
+                    random_boid_ind = random.randint(0,len(boids)-1)
+                    flock.LaunchDuckling(mouse_pos - boids[random_boid_ind].pos, 10, boids[random_boid_ind])
+                    removed_boid = boids.pop(random_boid_ind)
+                    removed_boids.append(removed_boid)
+
             if e.type == py.KEYDOWN:
                 key = e.key
                 if key == py.K_SPACE:
-                    print("DASH")
-                    flock.Dash(Vec2(np.cos(np.arctan2(flock.vel.y, flock.vel.x)), np.sin(np.arctan2(flock.vel.y, flock.vel.x))) * 50, speed = 10) # player dashes in the direction they are moving/looking
+                    flock.Dash(Vec2(np.cos(np.arctan2(flock.vel.y, flock.vel.x)), np.sin(np.arctan2(flock.vel.y, flock.vel.x))) * 50) # player dashes in the direction they are moving/looking
             if e.type == py.KEYUP:
                 key = e.key
 
@@ -129,13 +148,12 @@ def MainGame(game):
         # -- DRAW --
         window.fill(DARKGRAY)
 
-        rounded_flock_velx = round(flock.vel.x)
-        rounded_flock_vely = round(flock.vel.y)
+        rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y))
 
         seen_rects = []
         for bg in map:
-            bg.x -= rounded_flock_velx
-            bg.y -= rounded_flock_vely
+            bg.x -= rounded_flock_vel.x
+            bg.y -= rounded_flock_vel.y
 
             if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: #only render the backgrounds on screen to save performance
                 py.draw.rect(window, CYAN, bg)
@@ -143,55 +161,70 @@ def MainGame(game):
 
         active_cols = []
         for col in colliders:
-            col.x -= rounded_flock_velx
-            col.y -= rounded_flock_vely
+            col.x -= rounded_flock_vel.x
+            col.y -= rounded_flock_vel.y
 
-            if debug_colliders and (col.x + col.w >= 0 and col.y + col.h >= 0):
+            if debug_colliders and (col.x + col.w >= 0 and col.y + col.h >= 0): #only render the colliders on screen to save performance
                 py.draw.rect(window, RED, col, 10)
                 active_cols.append(col)
 
-        for x in sections.keys():
-            for y in sections[x].keys():
-                flock.boids = sections[x][y]
-                for boid in sections[x][y].values():
-                    
-                    #Add forces to boid
-                    if Normalize(flock.screen_pos - boid.pos) < flock.range:
-                        if not boid.in_flock:
-                            boid.in_flock = True
-                            flock.num_boids += 1
+        enemy_rects = []
+        removed_enemies = []
+        for enemy in enemies:
+            enemy.AddForce(SetMagnitude(LimitMagnitude(flock.pos - enemy.pos, 5),5))
+            enemy.CheckCollisions(active_cols)
+            enemy.Update(flock)
+            if enemy.despawn_timer <= 0:
+                    removed_enemies.append(enemy)
+            enemy.Draw(window)
+            enemy_rects.append(enemy.rect)
 
-                        boid.max_speed = flock.saved_max_speed
-                        boid.alignment_enabled = False
-                    else:
-                        boid.max_speed = 6
-                        boid.alignment_enabled = True
-                        
-                    boid.Flock(sections[x][y], flock)
+        for enemy in removed_enemies:
+            enemies.remove(enemy)
 
-                    #Update Boid
-                    boid.Update(flock)
-                    sections = boid.UpdateSections(sections)
+        for boid in boids:
+            #Add forces to boid
+            if Normalize(flock.screen_pos - boid.pos) < flock.range:
+                boid.max_speed = 5
+                boid.alignment_enabled = False
+            else:
+                boid.max_speed = 6
+                boid.alignment_enabled = True
+                
+            boid.Flock(boids, flock=flock, flock_params=flock_params)
 
-                    #Draw Boid
-                    #direction_ray = Ray(boid.pos, boid.vel, 15)
-                    #direction_ray.DebugDraw(window)
-                    boid.Draw(window)
+            #Update Boid
+            boid.Update(flock)
+
+            #Draw Boid
+            #direction_ray = Ray(boid.pos, SetMagnitude(LimitMagnitude(boid.vel,5),5), 15)
+            #direction_ray.DebugDraw(window)
+            boid.Draw(window)
+
+        for boid in removed_boids:
+            boid_col_enemy_index = boid.CheckCollisions(enemy_rects)
+            if boid_col_enemy_index != -1:
+                enemies[boid_col_enemy_index].health -= flock.boid_damage
+                if enemies[boid_col_enemy_index].health <= 0:
+                    enemies.remove(enemies[boid_col_enemy_index])
+                removed_boids.remove(boid)
+            boid.Update(flock)
+            boid.Draw(window)
 
         flock.AddForce(movement_vector * flock.max_speed)
         
         # COLLISIONS
         flock.CheckWallCollisions(active_cols)
-
         flock.Update()
-        flock_rect = flock.Draw(window)
+        flock.Draw(window)
 
         # Draw text
-        text_rect1 = window.blit(fps_text, (200, 50))
-        text_rect2 = window.blit(flock_boid_num_text, (200, 100))
+        window.blit(fps_text, (200, 50))
+        window.blit(flock_boid_num_text, (200, 100))
         py.display.update()
 
 def Menu(menu, game, performance_test):
+
     play_button = py.Rect(screen_width/2 - 100, screen_height/2 - 100, 200, 50)
     play_text = font_arial30.render("Play", True, BLACK)
 
@@ -261,7 +294,7 @@ def PerformanceTest(performance_test):
         vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
         accel = Vec2(1,1)
         
-        boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=False)
+        boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=True)
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
         boid_count += 1
 
