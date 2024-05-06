@@ -2,6 +2,7 @@
 import pygame as py
 from pygame import Vector2 as Vec2
 import math
+import random
 
 #Some functions I created
 
@@ -49,3 +50,20 @@ def FindBoidSection(boid):
         ys = 1
     
     return [xs,ys]
+
+def GenerateSpawnPointOffMap():
+    randpos = random.randint(0,3)
+    if randpos == 0: #top
+        randx = random.randint(-50, 1650)
+        randy = random.randint(-150, -50)
+    elif randpos == 1: #bottom
+        randx = random.randint(-50, 1650)
+        randy = random.randint(950, 1100)
+    elif randpos == 2: #left
+        randx = random.randint(-150, -50)
+        randy = random.randint(-50, 950)
+    elif randpos == 3: #right
+        randx = random.randint(1650, 1800)
+        randy = random.randint(-50, 950)
+
+    return randx, randy

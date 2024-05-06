@@ -21,7 +21,7 @@ class Flock:
 
     ###--- INIT FUNCTION
 
-    def __init__(this, pos, vel, speed, range, img, mass=1): 
+    def __init__(this, pos, vel, speed, range, health, img, mass=1):
         # initialize member variables
         this.pos = pos
         this.speed = speed
@@ -30,6 +30,10 @@ class Flock:
         this.vel = LimitMagnitude(vel, this.max_speed)
         this.range = range
         this.mass = mass
+
+        this.coins = 0
+
+        this.health = health
 
         this.boid_damage = 1
 
@@ -53,6 +57,7 @@ class Flock:
         this.saved_img = img
 
         this.rect = this.img.get_rect(center = this.screen_pos)
+        this.CalculateCollisionRect()
 
         #Upgrades
         this.dashing = False
@@ -123,10 +128,25 @@ class Flock:
                 this.vel.x += 0.1
                 if this.vel.x > 0:
                     this.vel.x = 0
+
+    def CheckCollisions(this, colliders):
+        collide_index = this.collide_rect.collidelist(colliders)
+        return collide_index
     
     def CheckWallCollisions(this, walls):
-        if this.stunned == False: return
+        if this.stunned == True: return
 
+        multiplier = this.CalculateCollisionRect()
+        collide_index = this.collide_rect.collidelist(walls)
+        if collide_index != -1:
+            this.has_collision = True
+            this.CollisionResponse(multiplier)
+            return True
+        
+        this.has_collision = False
+        return False
+    
+    def CalculateCollisionRect(this):
         this.collide_rect = this.rect
         multiplier = 5
         if (this.vel.x < 0 and this.vel.y > 0) or (this.vel.x < 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y < 0) or (this.vel.x > 0 and this.vel.y > 0) or (this.vel == Vec2(0,0)):
@@ -136,19 +156,11 @@ class Flock:
             this.collide_rect.y += this.collide_rect.height/2
             multiplier = 15
 
-        collide_index = this.collide_rect.collidelist(walls)
-        if collide_index != -1:
-            this.CollisionResponse(multiplier)
-            return True
-        
-        this.has_collision = False
-        return False
+        return multiplier
     
     def CollisionResponse(this, multiplier):
         this.forces = Vec2(0,0)
         this.vel = (-this.last_vel) * multiplier
-
-        this.has_collision = True
         this.speed = this.max_speed / 5
         this.stunned = True
 
