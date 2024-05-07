@@ -5,14 +5,15 @@ from helpfunctions import *
 import numpy as np
 
 class EnemyParams: # params used to create enemy
-    def __init__(this, img, despawn_img, attack_img, attack_range, health, damage, value):
+    def __init__(this, img, despawn_img, attack_img, attack_range, speed, health, damage, value):
         this.img = img # enemy img
         this.despawn_img = despawn_img # img used for despawn animation
         this.attack_img = attack_img # img used for attack animation
         this.attack_range = attack_range # how close to attack player
         this.health = health # maximum health
         this.damage = damage # damage to player
-        this.value = value # coins
+        this.value = value # coins awarded to player when defeated
+        this.speed = speed # enemy speed
 
 def SpawnEnemy(type_params):
     randx, randy = GenerateSpawnPointOffMap() # generates random x and y points off the visible part of the screen
@@ -20,7 +21,7 @@ def SpawnEnemy(type_params):
     vel = Vec2(0,0) # sets velocity
     accel = Vec2(0,0) # sets acceleration
 
-    return Enemy(pos, vel, accel, type_params.health, type_params.damage, type_params.value, type_params.attack_range, type_params.img, type_params.attack_img, type_params.despawn_img) # returns Enemy type
+    return Enemy(pos, vel, accel, type_params.health, type_params.damage, type_params.value, type_params.attack_range, type_params.img, type_params.attack_img, type_params.despawn_img, type_params.speed) # returns Enemy type
 
 def SpawnWave(enemies_array, num_enemies, type_params):
     for i in range(num_enemies):
@@ -90,12 +91,12 @@ class Enemy:
         if col_index != -1:
             this.forces = Vec2(0,0)
 
-    def Update(this, flock):
+    def Update(this, ts, flock):
         this.img = py.transform.rotate(this.saved_img, (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180))))
 
-        dist_from_flock = Normalize(flock.screen_pos - this.pos)
+        dist_from_flock = Normalize(flock.pos - this.pos)
         if dist_from_flock > this.attack_range and this.hit_player == False:
-            this.AddForce(LimitMagnitude((flock.screen_pos - this.pos) * this.max_speed, this.max_speed))
+            this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
         else:
             this.hit_player = True
 
@@ -104,17 +105,17 @@ class Enemy:
     
         if this.hit_player == False:
             this.accel = this.forces / this.mass
-            this.vel = LimitMagnitude(this.vel + this.accel, this.max_speed)
-            this.pos += this.vel
+            this.vel = LimitMagnitude(this.vel + this.accel * ts, this.max_speed)
+            this.pos += this.vel * ts
         elif this.hit_player == True:
-            if this.size_multiplier < 5: this.size_multiplier += 1
-            elif this.size_multiplier >= 5: this.size_multiplier -= 4
+            if this.size_multiplier < 5: this.size_multiplier += 1 * ts
+            elif this.size_multiplier >= 5: this.size_multiplier -= 4 * ts
 
             this.img = py.transform.scale(this.despawn_img, (this.despawn_img.get_width() * this.size_multiplier, this.despawn_img.get_height() * this.size_multiplier))
 
-            this.despawn_timer -= 1
+            this.despawn_timer -= 1 * ts
 
-        this.pos -= flock.vel
+        this.pos -= flock.vel * ts
         this.last_vel = this.vel
         this.forces = Vec2(0,0) # reset forces for next frame
 

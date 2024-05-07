@@ -9,6 +9,17 @@ from ray import *
 from helpfunctions import *
 from flock import *
 
+def SpawnDucklingsRandom(boids_array, flock, img):
+    for i in range(flock.max_boids):
+        pos = Vec2(flock.pos.x + random.randint(-100,100), flock.pos.y + random.randint(-1000,-800))
+        vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
+        accel = Vec2(1,1)
+        
+        boid = Boid(pos, vel, accel, img)
+        boid.in_flock = True
+        boids_array.append(boid)
+    return boids_array
+
 class Boid:
     def __init__(this, pos, vel, accel, img, mass=1, bound_to_window = False):
         this.id = random.randint(-sys.maxsize-1, sys.maxsize)
@@ -66,7 +77,7 @@ class Boid:
                 if dist < flock_params.cohesion_distance:
                     cohesion_force += other.pos
                     if flock != None:
-                        cohesion_force += flock.screen_pos - other.pos
+                        cohesion_force += flock.pos - other.pos
                     cohesion_neighbors += 1
 
                 if dist < flock_params.separation_distance:
@@ -97,7 +108,7 @@ class Boid:
                 separation_force = LimitMagnitude(separation_force, this.max_force) * flock_params.separation_factor
 
             if cohesion_neighbors == 0 and flock != None and this.in_flock:
-                cohesion_force += flock.screen_pos - this.pos
+                cohesion_force += flock.pos - this.pos
                 cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
                 cohesion_force -= this.vel
                 cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
@@ -118,7 +129,7 @@ class Boid:
                 if dist < flock_params.cohesion_distance:
                     cohesion_force += other.pos
                     if flock != None:
-                        cohesion_force += flock.screen_pos - other.pos
+                        cohesion_force += flock.pos - other.pos
                     cohesion_neighbors += 1
 
                 if dist < flock_params.separation_distance:
@@ -149,7 +160,7 @@ class Boid:
                 separation_force = LimitMagnitude(separation_force, this.max_force) * flock_params.separation_factor
 
             if cohesion_neighbors == 0 and flock != None and this.in_flock:
-                cohesion_force += flock.screen_pos - this.pos
+                cohesion_force += flock.pos - this.pos
                 cohesion_force = SetMagnitude(cohesion_force, this.max_speed)
                 cohesion_force -= this.vel
                 cohesion_force = LimitMagnitude(cohesion_force, this.max_force) * flock_params.cohesion_factor
@@ -172,11 +183,11 @@ class Boid:
 
         return temp_sections
 
-    def Update(this, flock=None):
+    def Update(this, ts, flock=None):
         this.accel = this.forces / this.mass # calculate the acceleration based on current frame forces and boid's mass
-        this.vel = LimitMagnitude(this.vel + this.accel, this.max_speed) # update velocity based on acceleration, but limit the magnitude of the vector to the max speed
-        this.pos += this.vel # update position based on current velocity
-        if flock != None: this.pos -= flock.vel
+        this.vel = LimitMagnitude(this.vel + this.accel * ts, this.max_speed) # update velocity based on acceleration, but limit the magnitude of the vector to the max speed
+        this.pos += this.vel * ts # update position based on current velocity
+        if flock != None: this.pos -= flock.vel * ts
         this.forces = Vec2(0,0) # reset forces for next frame
 
         this.img = py.transform.rotate(this.saved_img, (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180)))) # rotate boid image -- due to pygame's skewed coordinate system the rotation has to be altered slightly (hence the negative y axis)

@@ -43,6 +43,8 @@ cache = Cache()
 font_arial30 = py.font.SysFont('Arial', 30)
 font_arial80 = py.font.SysFont('Arial', 80)
 
+time_scale = 1
+
 ## MAIN GAME
 
 def MainGame(game):
@@ -60,10 +62,10 @@ def MainGame(game):
 
     debug_colliders = True
     colliders = [
-        py.Rect(-1000, -2000, 2000, 1000), #top
-        py.Rect(-1000, 1000, 2000, 1000), #bottom
-        py.Rect(-2000, -1000, 1000, 2000), #left
-        py.Rect(1000, -1000, 1000, 2000), #right
+        py.Rect(-1000, -2000, 2000, 1000), # top
+        py.Rect(-1000, 1000, 2000, 1000), # bottom
+        py.Rect(-2000, -1000, 1000, 2000), # left
+        py.Rect(1000, -1000, 1000, 2000), # right
     ]
 
     map_offset = [1000, 0]
@@ -81,17 +83,10 @@ def MainGame(game):
 
     flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 10, range=200, health=25, img=ducky_large_img)
 
-    for i in range(25):
-        pos = Vec2(flock.screen_pos.x + random.randint(-400,400), flock.screen_pos.y +  random.randint(-400,400))
-        vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
-        accel = Vec2(1,1)
-        
-        boid = Boid(pos, vel, accel, ducky_small_img)
-        boid.in_flock = True
-        boids.append(boid)
+    SpawnDucklingsRandom(boids, flock, ducky_small_img)
 
     enemies = []
-    sploder_enemy = EnemyParams(circle_50px_img, circle_50px_img, circle_50px_img, attack_range=75, health=1, damage=5, value=25)
+    sploder_enemy = EnemyParams(circle_50px_img, circle_50px_img, circle_50px_img, attack_range=75, speed=4, health=1, damage=5, value=25)
 
     current_wave = 0
     wave_countdown = 300
@@ -99,22 +94,24 @@ def MainGame(game):
         (5, sploder_enemy), (10, sploder_enemy)
     ]
 
-    flock.num_boids = len(boids)
     flock.Draw(window)
     
     SpawnWave(enemies, waves[current_wave][0], waves[current_wave][1])
 
     while game:
         clock.tick(fps)
+
         # RENDER TEXT
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK) # renders fps text
         flock_health_text = font_arial30.render("HP: " + str(flock.health), True, BLACK) # renders health text
-        flock_boid_num_text = font_arial30.render("Ducklings: " + str(flock.num_boids), True, BLACK) # renders num ducklings text
         flock_num_coins_text = font_arial30.render("Coins: " + str(flock.coins), True, BLACK) # renders num coins text
+
+        flock.num_boids = len(boids)
+        flock_boid_num_text = font_arial30.render("Ducklings: " + str(flock.num_boids), True, BLACK) # renders num ducklings text
 
         # WAVE COUNTDOWN TEXT
         if len(enemies) == 0: # check if enemies in current wave are defeated
-            wave_countdown -= 1 # start counting down each frame (millisecond)
+            wave_countdown -= 1 * time_scale # start counting down each frame (millisecond)
             wave_countdown_text = font_arial80.render(str(round(wave_countdown / 60)), True, WHITE) # render the text in seconds, and round it
             if wave_countdown <= 0: # check if countdown is over
                 current_wave += 1 # increment wave
@@ -123,10 +120,10 @@ def MainGame(game):
                 SpawnWave(enemies, waves[current_wave][0], waves[current_wave][1]) # spawn a new wave of enemies based on the waves list
                 wave_countdown = 300 # reset the countdown for next wave
 
-        #Key input
+        # Key input
         keys = py.key.get_pressed()
 
-        #Movement force based on WASD keys pressed
+        # Movement force based on WASD keys pressed
         movement_vector = Vec2(0,0)
         if flock.stunned == False:
             if keys[py.K_w]:
@@ -138,41 +135,44 @@ def MainGame(game):
             if keys[py.K_d]:
                 movement_vector.x += 1
         
-        for e in py.event.get():
-            if e.type == py.QUIT: 
-                game = False
-                sys.exit()
+        for e in py.event.get(): # get events
+            if e.type == py.QUIT: # quit event
+                game = False # game boolean false
+                sys.exit() # exit game
 
             #Get user input
-            if e.type == py.MOUSEBUTTONDOWN:
-                mouse_pos = py.mouse.get_pos()
-                flock.num_boids = len(boids)
-                if len(boids) > 0:
-                    random_boid_ind = random.randint(0,len(boids)-1)
-                    flock.LaunchDuckling(mouse_pos - boids[random_boid_ind].pos, 10, boids[random_boid_ind])
-                    removed_boid = boids.pop(random_boid_ind)
-                    removed_boids.append(removed_boid)
+            if e.type == py.MOUSEBUTTONDOWN: # left mouse button down
+                mouse_pos = py.mouse.get_pos() # get mouse position
+                if len(boids) > 0: # check if there are boids
+                    random_boid_ind = random.randint(0,len(boids)-1) # get a random boid
+                    flock.LaunchDuckling(mouse_pos - boids[random_boid_ind].pos, 10, boids[random_boid_ind]) # launch that random boid in the direction of the mouse
+                    removed_boid = boids.pop(random_boid_ind) # remove the boid from boids list
+                    removed_boids.append(removed_boid) # append the boid to removed boids list
 
-            if e.type == py.KEYDOWN:
-                key = e.key
-                if key == py.K_SPACE:
+            if e.type == py.KEYDOWN: # key down
+                key = e.key # get key 
+                if key == py.K_SPACE: # check key is space
                     flock.Dash(Vec2(np.cos(np.arctan2(flock.vel.y, flock.vel.x)), np.sin(np.arctan2(flock.vel.y, flock.vel.x))) * 50) # player dashes in the direction they are moving/looking
-            if e.type == py.KEYUP:
-                key = e.key
+                if key == py.K_r: # check key is r
+                    if flock.num_boids <= 0: # check num boids less than or equal to 0
+                        SpawnDucklingsRandom(boids, flock, ducky_small_img) # "reload" ducklings
+                    
+            if e.type == py.KEYUP: # key up
+                key = e.key # get key
 
-        flock.Movement(movement_vector)
+        flock.Movement(movement_vector) # move flock based on movement vector
 
         # -- DRAW --
-        window.fill(DARKGRAY)
+        window.fill(DARKGRAY) # fill window with color
 
-        rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y))
+        rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y)) * time_scale
 
         seen_rects = []
         for bg in map:
             bg.x -= rounded_flock_vel.x
             bg.y -= rounded_flock_vel.y
 
-            if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: #only render the backgrounds on screen to save performance
+            if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: # only render the backgrounds on screen to save performance
                 py.draw.rect(window, CYAN, bg)
                 seen_rects.append(bg)
 
@@ -181,41 +181,40 @@ def MainGame(game):
             col.x -= rounded_flock_vel.x
             col.y -= rounded_flock_vel.y
 
-            if col.x + col.w >= 0 and col.y + col.h >= 0: #only render the colliders on screen to save performance
+            if col.x + col.w >= 0 and col.y + col.h >= 0: # only render the colliders on screen to save performance
                 active_cols.append(col)
                 if debug_colliders:
                     py.draw.rect(window, RED, col, 10)
 
         enemy_rects = []
         removed_enemies = []
-        for i in range(len(enemies)):
-            enemy = enemies[i]
+        for enemy in enemies:
             #enemy.Separate(enemies)
             enemy.CheckCollisions(active_cols)
-            enemy.Update(flock)
+            enemy.Update(time_scale, flock)
 
             if enemy.despawn_timer <= 0:
-                removed_enemies.append(i)
+                removed_enemies.append(enemy)
             else:
                 enemy_rects.append(enemy.rect)
             enemy.Draw(window)
 
-        for i in removed_enemies:
-            if len(enemies) > 0: enemies.pop(i)
+        for enemy in removed_enemies:
+            if len(enemies) > 0: enemies.remove(enemy)
 
         for boid in boids:
             #Add forces to boid
-            if Normalize(flock.screen_pos - boid.pos) < flock.range:
-                boid.max_speed = 5
+            if Normalize(flock.pos - boid.pos) < flock.range:
+                boid.max_speed = 6
                 boid.alignment_enabled = False
             else:
-                boid.max_speed = 6
+                boid.max_speed = 8
                 boid.alignment_enabled = True
                 
             boid.Flock(boids, flock=flock, flock_params=flock_params)
 
             #Update Boid
-            boid.Update(flock)
+            boid.Update(time_scale, flock)
 
             #Draw Boid
             #direction_ray = Ray(boid.pos, SetMagnitude(LimitMagnitude(boid.vel,5),5), 15)
@@ -227,10 +226,11 @@ def MainGame(game):
             if boid_col_enemy_index != -1:
                 enemies[boid_col_enemy_index].health -= flock.boid_damage
                 if enemies[boid_col_enemy_index].health <= 0:
+                    flock.health += 1
                     flock.coins += enemies[boid_col_enemy_index].value
                     enemies.remove(enemies[boid_col_enemy_index])
                 removed_boids.remove(boid)
-            boid.Update(flock)
+            boid.Update(time_scale, flock)
             boid.Draw(window)
 
         flock.AddForce(movement_vector * flock.max_speed)
@@ -240,14 +240,15 @@ def MainGame(game):
         if len(enemy_rects) > 0:
             flock_col_enemy = flock.CheckCollisions(enemy_rects)
             if flock_col_enemy != -1:
-                if enemies[flock_col_enemy].can_damage:
+                if enemies[flock_col_enemy].can_damage and flock.health > 0:
                     enemies[flock_col_enemy].can_damage = False
                     flock.health -= enemies[flock_col_enemy].damage
                     if flock.health <= 0:
+                        flock.health = 0
                         print("DEFEAT")
         
         # UPDATE AND DRAW
-        flock.Update()
+        flock.Update(time_scale)
         flock.Draw(window)
 
         # DRAW UI
@@ -375,7 +376,7 @@ def PerformanceTest(performance_test):
                     #Add forces to boid
                     boid.Flock(sections[x][y], flock_params = flock_params)
                     #Update
-                    boid.Update()
+                    boid.Update(1)
                     sections = boid.UpdateSections(sections)
                     #Draw
                     #direction_ray = SimpleRay(boid.pos, boid.vel, 15)
