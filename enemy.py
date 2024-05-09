@@ -1,11 +1,13 @@
 #imports
 import pygame as py
 from pygame import Vector2 as Vec2
-from helpfunctions import *
 import numpy as np
 
+from helpfunctions import *
+
 class EnemyParams: # params used to create enemy
-    def __init__(this, img, despawn_img, attack_img, attack_range, speed, health, damage, value):
+    def __init__(this, type, img, despawn_img, attack_img, attack_range, speed, health, damage, value):
+        this.type = type # enemy type
         this.img = img # enemy img
         this.despawn_img = despawn_img # img used for despawn animation
         this.attack_img = attack_img # img used for attack animation
@@ -21,7 +23,7 @@ def SpawnEnemy(type_params):
     vel = Vec2(0,0) # sets velocity
     accel = Vec2(0,0) # sets acceleration
 
-    return Enemy(pos, vel, accel, type_params.health, type_params.damage, type_params.value, type_params.attack_range, type_params.img, type_params.attack_img, type_params.despawn_img, type_params.speed) # returns Enemy type
+    return Enemy(type_params.type, pos, vel, accel, type_params.health, type_params.damage, type_params.value, type_params.attack_range, type_params.img, type_params.attack_img, type_params.despawn_img, type_params.speed) # returns Enemy type
 
 def SpawnWave(enemies_array, num_enemies, type_params):
     for i in range(num_enemies):
@@ -30,7 +32,8 @@ def SpawnWave(enemies_array, num_enemies, type_params):
     return enemies_array
 
 class Enemy:
-    def __init__(this, pos, vel, accel, health, damage, value, attack_range, img, attack_img, despawn_img, max_speed=4, max_force=0.2, mass=1):
+    def __init__(this, type, pos, vel, accel, health, damage, value, attack_range, img, attack_img, despawn_img, max_speed=4, max_force=0.2, mass=1):
+        this.type = type
         this.pos = pos
         this.vel = vel
         this.accel = accel
@@ -58,6 +61,9 @@ class Enemy:
         this.hit_player = False
         this.despawn_timer = 30
 
+        this.boss_attack_cd = 120
+        this.boss_attack_timer = this.boss_attack_cd
+
     def Separate(this, enemies):
         separation_force = Vec2(0,0)
         separation_dist = 100
@@ -83,6 +89,26 @@ class Enemy:
 
             this.AddForce(separation_force)
 
+    def TypeCheck(this, ts, dist_from_flock, flock):
+        if this.type == "sploder":
+            if dist_from_flock > this.attack_range and this.hit_player == False:
+                this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
+            else:
+                this.hit_player = True
+
+                this.forces = Vec2(0,0)
+                this.vel = Vec2(0,0)
+
+        if this.type == "boss":
+            if dist_from_flock > this.attack_range and this.hit_player == False:
+                this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
+
+            if this.can_damage == False:
+                this.boss_attack_cd -= 1 * ts
+                if this.boss_attack_cd <= 0:
+                    this.can_damage = True
+                    this.boss_attack_cd = this.boss_attack_timer
+
     def AddForce(this, force=Vec2(0,0)):
         this.forces += force
 
@@ -95,13 +121,7 @@ class Enemy:
         this.img = py.transform.rotate(this.saved_img, (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180))))
 
         dist_from_flock = Normalize(flock.pos - this.pos)
-        if dist_from_flock > this.attack_range and this.hit_player == False:
-            this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
-        else:
-            this.hit_player = True
-
-            this.forces = Vec2(0,0)
-            this.vel = Vec2(0,0)
+        this.TypeCheck(ts, dist_from_flock, flock)
     
         if this.hit_player == False:
             this.accel = this.forces / this.mass

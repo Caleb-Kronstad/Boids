@@ -5,7 +5,6 @@ import numpy as np
 import random, sys
 
 from colors import *
-from ray import *
 from helpfunctions import *
 from flock import *
 

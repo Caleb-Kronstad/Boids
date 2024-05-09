@@ -1,7 +1,8 @@
-##--- TEMPORARY CITATIONS ---
-# Reynolds, Craig. “Boids.” Red3d, 1995, www.red3d.com/cwr/boids/. 
-# Lague, Sebastian. “Coding Adventure: Boids.” YouTube, 26 Aug. 2019, www.youtube.com/watch?v=bqtqltqcQhw&t=118s. 
-# Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect. 
+##--- CITATIONS ---
+# 1. Reynolds, Craig. “Boids.” Red3d, 1995, www.red3d.com/cwr/boids/. 
+# 2. Lague, Sebastian. “Coding Adventure: Boids.” YouTube, 26 Aug. 2019, www.youtube.com/watch?v=bqtqltqcQhw&t=118s. 
+# 3. Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect. 
+# 4. 
 ##---
 
 ### -- IMPORTANT --
@@ -21,10 +22,8 @@ from colors import *
 from boid import *
 from flock import *
 from enemy import *
-from cache import *
 from ray import *
 from helpfunctions import *
-from ui import *
 
 py.init()
 screen_width, screen_height = 1600, 900
@@ -38,23 +37,25 @@ window_flags = py.DOUBLEBUF # | py.FULLSCREEN
 window = py.display.set_mode((screen_width, screen_height), window_flags, 8)
 clock = py.time.Clock()
 fps = 60
-cache = Cache()
 
 font_arial30 = py.font.SysFont('Arial', 30)
 font_arial80 = py.font.SysFont('Arial', 80)
 
-time_scale = 1
-
 ## MAIN GAME
 
 def MainGame(game):
-    circle_15px_img = cache.LoadImage('resources/circle_15px.png')
-    circle_50px_img = cache.LoadImage('resources/circle_50px.png')
-    blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
-    yellow_arrow_img = cache.LoadImage('resources/yellow_arrow.png')
-    ducky_small_img = cache.LoadImage('resources/ducky_small.png')
-    ducky_medium_img = cache.LoadImage('resources/ducky_medium.png')
-    ducky_large_img = cache.LoadImage('resources/ducky_large.png')
+    time_scale = 1  
+
+    circle_15px_img = py.image.load('resources/circle_15px.png').convert_alpha()
+    circle_50px_img = py.image.load('resources/circle_50px.png').convert_alpha()
+    blue_arrow_img = py.image.load('resources/blue_arrow.png').convert_alpha()
+    yellow_arrow_img = py.image.load('resources/yellow_arrow.png').convert_alpha()
+    ducky_small_img = py.image.load('resources/ducky_small.png').convert_alpha()
+    ducky_medium_img = py.image.load('resources/ducky_medium.png').convert_alpha()
+    ducky_large_img = py.image.load('resources/ducky_large.png').convert_alpha()
+
+    sploder_img = circle_50px_img
+    boss_img = circle_50px_img
 
     map = [
         py.Rect(-1000, -1000, 2000, 2000),
@@ -86,12 +87,13 @@ def MainGame(game):
     SpawnDucklingsRandom(boids, flock, ducky_small_img)
 
     enemies = []
-    sploder_enemy = EnemyParams(circle_50px_img, circle_50px_img, circle_50px_img, attack_range=75, speed=4, health=1, damage=5, value=25)
+    sploder_enemy = EnemyParams("sploder", circle_50px_img, circle_50px_img, circle_50px_img, attack_range=75, speed=4, health=1, damage=5, value=25)
+    boss_enemy = EnemyParams("boss", circle_50px_img, circle_50px_img, circle_50px_img, attack_range = 200, speed=1, health=15, damage=20, value=100)
 
     current_wave = 0
     wave_countdown = 300
     waves = [
-        (5, sploder_enemy), (10, sploder_enemy)
+        (3, sploder_enemy), (5, sploder_enemy), (3, sploder_enemy), (7, sploder_enemy), (1, boss_enemy)
     ]
 
     flock.Draw(window)
@@ -105,6 +107,7 @@ def MainGame(game):
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK) # renders fps text
         flock_health_text = font_arial30.render("HP: " + str(flock.health), True, BLACK) # renders health text
         flock_num_coins_text = font_arial30.render("Coins: " + str(flock.coins), True, BLACK) # renders num coins text
+        paused_text = font_arial80.render("PAUSED", True, WHITE) # renders paused text
 
         flock.num_boids = len(boids)
         flock_boid_num_text = font_arial30.render("Ducklings: " + str(flock.num_boids), True, BLACK) # renders num ducklings text
@@ -121,19 +124,19 @@ def MainGame(game):
                 wave_countdown = 300 # reset the countdown for next wave
 
         # Key input
-        keys = py.key.get_pressed()
+        keys = py.key.get_pressed() # gets the keys pressed
 
         # Movement force based on WASD keys pressed
-        movement_vector = Vec2(0,0)
-        if flock.stunned == False:
-            if keys[py.K_w]:
-                movement_vector.y -= 1
-            if keys[py.K_s]:
-                movement_vector.y += 1
-            if keys[py.K_a]:
-                movement_vector.x -= 1
-            if keys[py.K_d]:
-                movement_vector.x += 1
+        movement_vector = Vec2(0,0) # reset movement vector to get movement each frame
+        if flock.stunned == False: # player can move
+            if keys[py.K_w]: # w key pressed
+                movement_vector.y -= 1 # move up
+            if keys[py.K_s]: # s key pressed
+                movement_vector.y += 1 # move down
+            if keys[py.K_a]: # a key pressed  
+                movement_vector.x -= 1 # move left
+            if keys[py.K_d]: # d key pressed 
+                movement_vector.x += 1 # move right
         
         for e in py.event.get(): # get events
             if e.type == py.QUIT: # quit event
@@ -143,7 +146,7 @@ def MainGame(game):
             #Get user input
             if e.type == py.MOUSEBUTTONDOWN: # left mouse button down
                 mouse_pos = py.mouse.get_pos() # get mouse position
-                if len(boids) > 0: # check if there are boids
+                if len(boids) > 0 and time_scale > 0: # check if there are boids
                     random_boid_ind = random.randint(0,len(boids)-1) # get a random boid
                     flock.LaunchDuckling(mouse_pos - boids[random_boid_ind].pos, 10, boids[random_boid_ind]) # launch that random boid in the direction of the mouse
                     removed_boid = boids.pop(random_boid_ind) # remove the boid from boids list
@@ -156,6 +159,9 @@ def MainGame(game):
                 if key == py.K_r: # check key is r
                     if flock.num_boids <= 0: # check num boids less than or equal to 0
                         SpawnDucklingsRandom(boids, flock, ducky_small_img) # "reload" ducklings
+                if key == py.K_TAB: # check key is tab
+                    if time_scale == 1: time_scale = 0 # pause game
+                    elif time_scale == 0: time_scale = 1 # unpause game
                     
             if e.type == py.KEYUP: # key up
                 key = e.key # get key
@@ -167,21 +173,19 @@ def MainGame(game):
 
         rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y)) * time_scale
 
-        seen_rects = []
         for bg in map:
             bg.x -= rounded_flock_vel.x
             bg.y -= rounded_flock_vel.y
 
             if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: # only render the backgrounds on screen to save performance
-                py.draw.rect(window, CYAN, bg)
-                seen_rects.append(bg)
+                py.draw.rect(window, CYAN, bg) # draw bg
 
         active_cols = []
         for col in colliders:
             col.x -= rounded_flock_vel.x
             col.y -= rounded_flock_vel.y
 
-            if col.x + col.w >= 0 and col.y + col.h >= 0: # only render the colliders on screen to save performance
+            if col.x + col.w >= 0 and col.y + col.h >= 0: # only use the colliders on screen to save performance
                 active_cols.append(col)
                 if debug_colliders:
                     py.draw.rect(window, RED, col, 10)
@@ -189,7 +193,7 @@ def MainGame(game):
         enemy_rects = []
         removed_enemies = []
         for enemy in enemies:
-            #enemy.Separate(enemies)
+            enemy.Separate(enemies)
             enemy.CheckCollisions(active_cols)
             enemy.Update(time_scale, flock)
 
@@ -199,8 +203,8 @@ def MainGame(game):
                 enemy_rects.append(enemy.rect)
             enemy.Draw(window)
 
-        for enemy in removed_enemies:
-            if len(enemies) > 0: enemies.remove(enemy)
+        for enemy in removed_enemies: # loop through removed enemies
+            if len(enemies) > 0: enemies.remove(enemy) # remove enemy from array
 
         for boid in boids:
             #Add forces to boid
@@ -222,18 +226,21 @@ def MainGame(game):
             boid.Draw(window)
 
         for boid in removed_boids:
-            boid_col_enemy_index = boid.CheckCollisions(enemy_rects)
-            if boid_col_enemy_index != -1:
-                enemies[boid_col_enemy_index].health -= flock.boid_damage
-                if enemies[boid_col_enemy_index].health <= 0:
-                    flock.health += 1
-                    flock.coins += enemies[boid_col_enemy_index].value
-                    enemies.remove(enemies[boid_col_enemy_index])
-                removed_boids.remove(boid)
-            boid.Update(time_scale, flock)
-            boid.Draw(window)
+            boid_col_enemy_index = boid.CheckCollisions(enemy_rects) # get collision index
+            if boid_col_enemy_index != -1: # check if there is a collision
+                enemies[boid_col_enemy_index].health -= flock.boid_damage # decrease enemy health
+                if enemies[boid_col_enemy_index].health <= 0: # make sure enemy has no more health
+                    flock.health += 1 # increase health for each enemy killed
+                    flock.coins += enemies[boid_col_enemy_index].value # add coins based on value of enemy
+                    enemies.remove(enemies[boid_col_enemy_index]) # remove enemy from list 
+                removed_boids.remove(boid) # remove boid from list
+            boid.Update(time_scale, flock) # update boid
+            if boid.pos.x > 1600 or boid.pos.x < -boid.img.get_width() or boid.pos.y > 900 or boid.pos.y < -boid.img.get_height(): # check if boid is offscreen
+                removed_boids.remove(boid) # remove boid from list
 
-        flock.AddForce(movement_vector * flock.max_speed)
+            boid.Draw(window) # draw boid
+
+        flock.AddForce(movement_vector * flock.max_speed) # add movement force to flock
         
         # COLLISIONS
         flock.CheckWallCollisions(active_cols)
@@ -258,6 +265,9 @@ def MainGame(game):
         window.blit(flock_num_coins_text, (200,200))
         if wave_countdown < 300:
             window.blit(wave_countdown_text, (screen_width/2, 100))
+
+        if time_scale == 0:
+            window.blit(paused_text, (screen_width/2 - 125, screen_height/2 - 40))
 
         # UPDATE DISPLAY
         py.display.update()
@@ -319,7 +329,7 @@ def Menu(menu, game, performance_test):
 
 ### PERFORMANCE TEST FUNCTION
 def PerformanceTest(performance_test):
-    blue_arrow_img = cache.LoadImage('resources/blue_arrow.png')
+    blue_arrow_img = py.image.load('resources/blue_arrow.png').convert_alpha()
     add_boid_text = font_arial30.render("Press 'T' to add a boid", True, WHITE)
     boid_count = 0
     

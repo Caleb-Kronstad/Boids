@@ -17,7 +17,6 @@ class Wall:
                      (this.x2, this.y2),
                      width)
 
-# only for drawing the ray onto the screen, not for calculating anything
 class Ray:
     def __init__(this, pos, direction, distance):
         this.pos = pos

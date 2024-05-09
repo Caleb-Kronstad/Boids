@@ -2,11 +2,9 @@
 import pygame as py
 from pygame import Vector2 as Vec2
 import numpy as np
-import random, sys
 
 from boid import *
 from helpfunctions import *
-from ray import *
 
 class FlockParams(): # Params for flock calculations
     def __init__(this, separation_distance = 50, alignment_distance = 100, cohesion_distance = 200, separation_factor = 1, alignment_factor = 1, cohesion_factor = 1):
