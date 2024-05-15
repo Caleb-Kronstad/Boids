@@ -127,7 +127,7 @@ class Enemy:
             this.accel = this.forces / this.mass
             this.vel = LimitMagnitude(this.vel + this.accel * ts, this.max_speed)
             this.pos += this.vel * ts
-        elif this.hit_player == True:
+        elif this.hit_player == True or this.can_damage == False:
             if this.size_multiplier < 5: this.size_multiplier += 1 * ts
             elif this.size_multiplier >= 5: this.size_multiplier -= 4 * ts
 

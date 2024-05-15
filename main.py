@@ -93,15 +93,23 @@ def MainGame(game):
     current_wave = 0
     wave_countdown = 300
     waves = [
-        (3, sploder_enemy), (5, sploder_enemy), (3, sploder_enemy), (7, sploder_enemy), (1, boss_enemy)
+        (3, sploder_enemy), (5, sploder_enemy), (3, sploder_enemy), (7, sploder_enemy), (1, boss_enemy),
+        (5, sploder_enemy), (2, sploder_enemy), (2, sploder_enemy), (6, sploder_enemy), (1, boss_enemy),
     ]
 
     flock.Draw(window)
     
     SpawnWave(enemies, waves[current_wave][0], waves[current_wave][1])
 
+    launch_upgrade = False
+    dash_upgrade = False
+
     while game:
         clock.tick(fps)
+
+        if flock.health <= 0:
+            time_scale = 0
+            game_over_text = font_arial80.render("GAME OVER", True, WHITE) # render Game Over text in white
 
         # RENDER TEXT
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK) # renders fps text
@@ -114,6 +122,17 @@ def MainGame(game):
 
         # WAVE COUNTDOWN TEXT
         if len(enemies) == 0: # check if enemies in current wave are defeated
+            launch_upgrade = False
+            dash_upgrade = False
+            if current_wave == 4:
+                launch_upgrade = True
+                flock.launch_cooldown -= 3
+                launch_upgrade_text = font_arial80.render("DUCKLING UPGRADE", True, WHITE) # launch upgrade text
+            if current_wave == 9:
+                dash_upgrade = True
+                flock.dash_cooldown -= 3
+                dash_upgrade_text = font_arial80.render("DASH UPGRADE", True, WHITE) # dash upgrade text
+
             wave_countdown -= 1 * time_scale # start counting down each frame (millisecond)
             wave_countdown_text = font_arial80.render(str(round(wave_countdown / 60)), True, WHITE) # render the text in seconds, and round it
             if wave_countdown <= 0: # check if countdown is over
@@ -159,7 +178,7 @@ def MainGame(game):
                 if key == py.K_r: # check key is r
                     if flock.num_boids <= 0: # check num boids less than or equal to 0
                         SpawnDucklingsRandom(boids, flock, ducky_small_img) # "reload" ducklings
-                if key == py.K_TAB: # check key is tab
+                if key == py.K_TAB and flock.health > 0: # check key is tab
                     if time_scale == 1: time_scale = 0 # pause game
                     elif time_scale == 0: time_scale = 1 # unpause game
                     
@@ -265,9 +284,16 @@ def MainGame(game):
         window.blit(flock_num_coins_text, (200,200))
         if wave_countdown < 300:
             window.blit(wave_countdown_text, (screen_width/2, 100))
+            if launch_upgrade:
+                window.blit(launch_upgrade_text, (screen_width/2 - 200, screen_height/2 - 40))
+            if dash_upgrade:
+                window.blit(dash_upgrade_text, (screen_width/2 - 150, screen_height/2 - 40))
 
         if time_scale == 0:
-            window.blit(paused_text, (screen_width/2 - 125, screen_height/2 - 40))
+            if flock.health > 0:
+                window.blit(paused_text, (screen_width/2 - 125, screen_height/2 - 40))
+            else:
+                window.blit(game_over_text, (screen_width/2 - 200, screen_height/2 - 40))
 
         # UPDATE DISPLAY
         py.display.update()
