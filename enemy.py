@@ -95,13 +95,16 @@ class Enemy:
                 this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
             else:
                 this.hit_player = True
-
                 this.forces = Vec2(0,0)
                 this.vel = Vec2(0,0)
 
         if this.type == "boss":
             if dist_from_flock > this.attack_range and this.hit_player == False:
                 this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
+            else:
+                this.hit_player = True
+                this.forces = Vec2(0,0)
+                this.vel = Vec2(0,0)
 
             if this.can_damage == False:
                 this.boss_attack_cd -= 1 * ts
@@ -127,7 +130,7 @@ class Enemy:
             this.accel = this.forces / this.mass
             this.vel = LimitMagnitude(this.vel + this.accel * ts, this.max_speed)
             this.pos += this.vel * ts
-        elif this.hit_player == True or this.can_damage == False:
+        elif this.hit_player == True:
             if this.size_multiplier < 5: this.size_multiplier += 1 * ts
             elif this.size_multiplier >= 5: this.size_multiplier -= 4 * ts
 

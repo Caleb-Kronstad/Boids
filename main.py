@@ -33,11 +33,12 @@ menu_flag = True
 performance_test_flag = False
 game_flag = False
 
-window_flags = py.DOUBLEBUF # | py.FULLSCREEN
+window_flags = py.DOUBLEBUF | py.FULLSCREEN
 window = py.display.set_mode((screen_width, screen_height), window_flags, 8)
 clock = py.time.Clock()
 fps = 60
 
+font_arial20 = py.font.SysFont('Arial', 20)
 font_arial30 = py.font.SysFont('Arial', 30)
 font_arial80 = py.font.SysFont('Arial', 80)
 
@@ -48,25 +49,27 @@ def MainGame(game):
 
     circle_15px_img = py.image.load('resources/circle_15px.png').convert_alpha()
     circle_50px_img = py.image.load('resources/circle_50px.png').convert_alpha()
+    circle_100px_img = py.image.load('resources/circle_100px.png').convert_alpha()
     blue_arrow_img = py.image.load('resources/blue_arrow.png').convert_alpha()
     yellow_arrow_img = py.image.load('resources/yellow_arrow.png').convert_alpha()
     ducky_small_img = py.image.load('resources/ducky_small.png').convert_alpha()
     ducky_medium_img = py.image.load('resources/ducky_medium.png').convert_alpha()
     ducky_large_img = py.image.load('resources/ducky_large.png').convert_alpha()
+    map_img = py.image.load('resources/map.jpg').convert_alpha()
 
     sploder_img = circle_50px_img
     boss_img = circle_50px_img
 
     map = [
-        py.Rect(-1000, -1000, 2000, 2000),
+        py.Rect(-2000, -2000, 4000, 4000),
     ]
 
-    debug_colliders = True
+    debug_colliders = False
     colliders = [
-        py.Rect(-1000, -2000, 2000, 1000), # top
-        py.Rect(-1000, 1000, 2000, 1000), # bottom
-        py.Rect(-2000, -1000, 1000, 2000), # left
-        py.Rect(1000, -1000, 1000, 2000), # right
+        py.Rect(-2000, -2600, 4000, 1000), # top
+        py.Rect(-2000, 1600, 4000, 1000), # bottom
+        py.Rect(-2600, -2000, 1000, 4000), # left
+        py.Rect(1600, -2000, 1000, 4000), # right
     ]
 
     map_offset = [1000, 0]
@@ -88,7 +91,7 @@ def MainGame(game):
 
     enemies = []
     sploder_enemy = EnemyParams("sploder", circle_50px_img, circle_50px_img, circle_50px_img, attack_range=75, speed=4, health=1, damage=5, value=25)
-    boss_enemy = EnemyParams("boss", circle_50px_img, circle_50px_img, circle_50px_img, attack_range = 200, speed=1, health=15, damage=20, value=100)
+    boss_enemy = EnemyParams("boss", circle_100px_img, circle_100px_img, circle_100px_img, attack_range = 200, speed=1, health=15, damage=20, value=100)
 
     current_wave = 0
     wave_countdown = 300
@@ -103,6 +106,10 @@ def MainGame(game):
 
     launch_upgrade = False
     dash_upgrade = False
+
+    launch_duckling_text = font_arial20.render("LEFT MOUSE - LAUNCH DUCKLING", True, BLACK)
+    reload_input_text = font_arial20.render("R - RECALL DUCKLINGS (MUST HAVE 0)", True, BLACK)
+    dash_input_text = font_arial20.render("SPACE - DASH", True, BLACK)
 
     while game:
         clock.tick(fps)
@@ -188,7 +195,7 @@ def MainGame(game):
         flock.Movement(movement_vector) # move flock based on movement vector
 
         # -- DRAW --
-        window.fill(DARKGRAY) # fill window with color
+        window.fill((50, 137, 44)) # fill window with color
 
         rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y)) * time_scale
 
@@ -197,7 +204,8 @@ def MainGame(game):
             bg.y -= rounded_flock_vel.y
 
             if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: # only render the backgrounds on screen to save performance
-                py.draw.rect(window, CYAN, bg) # draw bg
+                window.blit(map_img, (bg.x, bg.y))
+        
 
         active_cols = []
         for col in colliders:
@@ -218,7 +226,8 @@ def MainGame(game):
 
             if enemy.despawn_timer <= 0:
                 removed_enemies.append(enemy)
-            else:
+            
+            if enemy.can_damage:
                 enemy_rects.append(enemy.rect)
             enemy.Draw(window)
 
@@ -266,22 +275,26 @@ def MainGame(game):
         if len(enemy_rects) > 0:
             flock_col_enemy = flock.CheckCollisions(enemy_rects)
             if flock_col_enemy != -1:
-                if enemies[flock_col_enemy].can_damage and flock.health > 0:
-                    enemies[flock_col_enemy].can_damage = False
-                    flock.health -= enemies[flock_col_enemy].damage
-                    if flock.health <= 0:
-                        flock.health = 0
-                        print("DEFEAT")
+                if enemies[flock_col_enemy] in enemies:
+                    if enemies[flock_col_enemy].can_damage and flock.health > 0:
+                        enemies[flock_col_enemy].can_damage = False
+                        flock.health -= enemies[flock_col_enemy].damage
+                        if flock.health <= 0:
+                            flock.health = 0
+                            print("DEFEAT")
         
         # UPDATE AND DRAW
         flock.Update(time_scale)
         flock.Draw(window)
 
-        # DRAW UI
-        window.blit(fps_text, (200, 50))
-        window.blit(flock_health_text, (200, 100))
-        window.blit(flock_boid_num_text, (200, 150))
-        window.blit(flock_num_coins_text, (200,200))
+        # DRAW TEXT
+        window.blit(fps_text, (100, 50))
+        window.blit(flock_health_text, (100, 100))
+        window.blit(flock_boid_num_text, (100, 150))
+        window.blit(flock_num_coins_text, (100,200))
+        window.blit(launch_duckling_text, (1200, 50))
+        window.blit(reload_input_text, (1200, 80))
+        window.blit(dash_input_text, (1200, 110))
         if wave_countdown < 300:
             window.blit(wave_countdown_text, (screen_width/2, 100))
             if launch_upgrade:
@@ -303,18 +316,13 @@ def MainGame(game):
 ### MENU FUNCTION
 def Menu(menu, game, performance_test):
     play_button = py.Rect(screen_width/2 - 100, screen_height/2 - 100, 200, 50)
-    play_text = font_arial30.render("Play", True, BLACK)
+    play_text = font_arial30.render("GAME", True, WHITE)
 
     test_button = py.Rect(screen_width/2 - 100, screen_height/2, 200, 50)
-    test_text = font_arial30.render("Performance Test", True, BLACK)
+    test_text = font_arial30.render("SIMULATION", True, WHITE)
 
-    settings_button = py.Rect(screen_width/2 - 100, screen_height/2 + 100, 200, 50)
-    settings_text = font_arial30.render("Settings", True, BLACK)
-
-    exit_button = py.Rect(screen_width/2 - 100, screen_height/2 + 200, 200, 50)
-    exit_text = font_arial30.render("Exit", True, BLACK)
-
-    settings_open = False
+    exit_button = py.Rect(screen_width/2 - 100, screen_height/2 + 100, 200, 50)
+    exit_text = font_arial30.render("EXIT", True, WHITE)
 
     while menu:
         clock.tick(fps)
@@ -337,20 +345,15 @@ def Menu(menu, game, performance_test):
                     menu = False
                     performance_test = True
                     PerformanceTest(performance_test)
-                elif settings_button.collidepoint(e.pos):
-                    settings_open = True
 
         py.draw.rect(window, CYAN, play_button)
         py.draw.rect(window, CYAN, test_button)
-        py.draw.rect(window, CYAN, settings_button)
         py.draw.rect(window, CYAN, exit_button)
-        window.blit(play_text, (play_button.x, play_button.y))
-        window.blit(test_text, (test_button.x, test_button.y))
-        window.blit(settings_text, (settings_button.x, settings_button.y))
-        window.blit(exit_text, (exit_button.x, exit_button.y))
+        window.blit(play_text, (play_button.x + 60, play_button.y + 5))
+        window.blit(test_text, (test_button.x + 30, test_button.y + 5))
+        window.blit(exit_text, (exit_button.x + 70, exit_button.y + 5))
 
         py.display.update()
-
 
 
 ### PERFORMANCE TEST FUNCTION

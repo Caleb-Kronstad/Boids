@@ -1,2 +1,2 @@
 # Boids
-Creating boids in Python -- testing
+Creating boids in Python
