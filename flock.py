@@ -87,18 +87,18 @@ class Flock: # Player
     def DashCooldown(this, ts):
         if this.dashing: # check if dashing
             this.dash_cooldown -= 1 * ts # count down each frame
-            if this.dash_cooldown <= 0: # check cooldown equals than 0 
+            if this.dash_cooldown <= 0: # check cooldown equals 0 
                 if this.stunned == False: # check not stunned
                     this.speed = this.saved_speed # set speed to saved speed
             if this.dash_cooldown <= -15: # continue past 0
                 this.dashing = False # no longer dashing
                 this.dash_cooldown = this.dash_timer # reset timer
     def LaunchCooldown(this, ts):
-        if this.can_launch == False:
-            this.launch_cooldown -= 1 * ts
-            if this.launch_cooldown <= 0:
-                this.can_launch = True
-                this.launch_cooldown = this.launch_timer
+        if this.can_launch == False: # check if launching
+            this.launch_cooldown -= 1 * ts # count down each frame
+            if this.launch_cooldown <= 0: # check cooldown equals 0
+                this.can_launch = True # set launch
+                this.launch_cooldown = this.launch_timer # reset cooldown
 
     ###---
     
@@ -109,6 +109,7 @@ class Flock: # Player
     
     def Movement(this, movement_vector):
         if movement_vector == Vec2(0,0): # check for no input
+            # smooth dampen velocity when no movement input
             if this.vel.y > 0:
                 this.vel.y -= 0.1
                 if this.vel.y < 0:
@@ -126,11 +127,11 @@ class Flock: # Player
                 if this.vel.x > 0:
                     this.vel.x = 0
 
-    def CheckCollisions(this, colliders):
+    def CheckCollisions(this, colliders): # check collisions with collider
         collide_index = this.collide_rect.collidelist(colliders)
         return collide_index
     
-    def CheckWallCollisions(this, walls):
+    def CheckWallCollisions(this, walls): # check wall collisions (more specific)
         if this.stunned == True: return
         multiplier = this.CalculateCollisionRect()
         collide_index = this.collide_rect.collidelist(walls)

@@ -25,7 +25,7 @@ def SpawnEnemy(type_params):
 
     return Enemy(type_params.type, pos, vel, accel, type_params.health, type_params.damage, type_params.value, type_params.attack_range, type_params.img, type_params.attack_img, type_params.despawn_img, type_params.speed) # returns Enemy type
 
-def SpawnWave(enemies_array, num_enemies, type_params):
+def SpawnWave(enemies_array, num_enemies, type_params): # Spawn a wave of enemies based on type and number
     for i in range(num_enemies):
         enemy = SpawnEnemy(type_params)
         enemies_array.append(enemy)
@@ -64,7 +64,7 @@ class Enemy:
         this.boss_attack_cd = 120
         this.boss_attack_timer = this.boss_attack_cd
 
-    def Separate(this, enemies):
+    def Separate(this, enemies): # Separate enemies from eachother based on other enemies surrounding
         separation_force = Vec2(0,0)
         separation_dist = 100
         separation_neighbors = 0
@@ -89,7 +89,7 @@ class Enemy:
 
             this.AddForce(separation_force)
 
-    def TypeCheck(this, ts, dist_from_flock, flock):
+    def TypeCheck(this, ts, dist_from_flock, flock): # check enemy type to invoke different responses
         if this.type == "sploder":
             if dist_from_flock > this.attack_range and this.hit_player == False:
                 this.AddForce(LimitMagnitude((flock.pos - this.pos) * this.max_speed, this.max_speed))
@@ -112,15 +112,15 @@ class Enemy:
                     this.can_damage = True
                     this.boss_attack_cd = this.boss_attack_timer
 
-    def AddForce(this, force=Vec2(0,0)):
+    def AddForce(this, force=Vec2(0,0)): # add force to entity
         this.forces += force
 
-    def CheckCollisions(this, colliders):
+    def CheckCollisions(this, colliders): # check collisions with collider
         col_index = this.rect.collidelist(colliders)
         if col_index != -1:
             this.forces = Vec2(0,0)
 
-    def Update(this, ts, flock):
+    def Update(this, ts, flock): # Update enemy physics and position
         this.img = py.transform.rotate(this.saved_img, (180/np.pi) * (np.arctan2(-this.vel.y, this.vel.x) - (90 * (np.pi/180))))
 
         dist_from_flock = Normalize(flock.pos - this.pos)

@@ -1,14 +1,13 @@
 ##--- CITATIONS ---
-# 1. Reynolds, Craig. “Boids.” Red3d, 1995, www.red3d.com/cwr/boids/. 
-# 2. Lague, Sebastian. “Coding Adventure: Boids.” YouTube, 26 Aug. 2019, www.youtube.com/watch?v=bqtqltqcQhw&t=118s. 
-# 3. Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect. 
-# 4. 
+# 1. Reynolds, Craig. “Boids.” Red3d, 1995, www.red3d.com/cwr/boids/.
+# 2. Lague, Sebastian. “Coding Adventure: Boids.” YouTube, 26 Aug. 2019, www.youtube.com/watch?v=bqtqltqcQhw&t=118s.
+# 3. The Coding Train. “Coding Challenge #124: Flocking Simulation.” YouTube, 11 Dec. 2018, www.youtube.com/watch?v=mhjuuHl6qHM.
+# 4. Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect.
 ##---
 
 ### -- IMPORTANT --
 # - The code for the performance test is much easier to understand (less complex) and is better for observing the specifics of implementing boids in code
 # - The performance test is also better optimized as it utilizes things such as dictionaries for the boids rather than lists, which have much faster lookups
-
 ###
 
 #import libraries to be used
@@ -25,19 +24,22 @@ from enemy import *
 from ray import *
 from helpfunctions import *
 
-py.init()
-screen_width, screen_height = 1600, 900
-py.display.set_caption("Boids")
+py.init() # initialize pygame
+screen_width, screen_height = 1600, 900 # window size
+py.display.set_caption("Boids") # set window caption
 
+# game flags
 menu_flag = True
 performance_test_flag = False
 game_flag = False
 
+# initialize window
 window_flags = py.DOUBLEBUF | py.FULLSCREEN
 window = py.display.set_mode((screen_width, screen_height), window_flags, 8)
 clock = py.time.Clock()
 fps = 60
 
+# fonts
 font_arial20 = py.font.SysFont('Arial', 20)
 font_bahnschrift25 = py.font.SysFont('Bahnschrift', 25)
 font_bahnschriftsb30 = py.font.SysFont('Bahnschrift', 30)
@@ -341,37 +343,38 @@ def MainGame(game):
 
 ### MENU FUNCTION
 def Menu(menu, game, performance_test):
-    play_button = py.Rect(screen_width/2 - 100, screen_height/2 - 100, 200, 50)
-    play_text = font_arial30.render("GAME", True, WHITE)
+    play_button = py.Rect(screen_width/2 - 100, screen_height/2 - 100, 200, 50) # play button rect
+    play_text = font_arial30.render("GAME", True, WHITE) # play button text
 
-    test_button = py.Rect(screen_width/2 - 100, screen_height/2, 200, 50)
-    test_text = font_arial30.render("SIMULATION", True, WHITE)
+    test_button = py.Rect(screen_width/2 - 100, screen_height/2, 200, 50) # simulation button rect
+    test_text = font_arial30.render("SIMULATION", True, WHITE) # simulation button text
+    
+    exit_button = py.Rect(screen_width/2 - 100, screen_height/2 + 100, 200, 50) # exit button rect
+    exit_text = font_arial30.render("EXIT", True, WHITE) # exit button text
 
-    exit_button = py.Rect(screen_width/2 - 100, screen_height/2 + 100, 200, 50)
-    exit_text = font_arial30.render("EXIT", True, WHITE)
-
-    while menu:
+    while menu: # loop
         clock.tick(fps)
-        window.fill(WHITE)
+        window.fill(WHITE) # fill window with color
 
-        for e in py.event.get():
-            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): 
+        for e in py.event.get(): # loop through events
+            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): # quit game
                 menu = False
                 sys.exit()
 
-            if e.type == py.MOUSEBUTTONDOWN and e.button == 1:
-                if exit_button.collidepoint(e.pos):
+            if e.type == py.MOUSEBUTTONDOWN and e.button == 1: # left mouse button down
+                if exit_button.collidepoint(e.pos): # exit button pressed
                     menu = False
                     sys.exit()
-                elif play_button.collidepoint(e.pos):
+                elif play_button.collidepoint(e.pos): # play button pressed
                     menu = False
                     game = True
                     MainGame(game)
-                elif test_button.collidepoint(e.pos):
+                elif test_button.collidepoint(e.pos): # simulation button pressed
                     menu = False
                     performance_test = True
                     PerformanceTest(performance_test)
 
+        # Draw buttons and text
         py.draw.rect(window, CYAN, play_button)
         py.draw.rect(window, CYAN, test_button)
         py.draw.rect(window, CYAN, exit_button)
@@ -379,25 +382,27 @@ def Menu(menu, game, performance_test):
         window.blit(test_text, (test_button.x + 30, test_button.y + 5))
         window.blit(exit_text, (exit_button.x + 70, exit_button.y + 5))
 
+        # Update display
         py.display.update()
 
 
 ### PERFORMANCE TEST FUNCTION
 def PerformanceTest(performance_test):
-    blue_arrow_img = py.image.load('resources/blue_arrow.png').convert_alpha()
+    blue_arrow_img = py.image.load('resources/blue_arrow.png').convert_alpha() # load in boid image
 
+    # controls text
     add_boid_text = font_arial30.render("[T] Add Boid", True, WHITE)
     debug_text = font_arial30.render("[N] Debug Boids", True, WHITE)
     menu_text = font_arial30.render("[M] Return to Menu", True, WHITE)
     quit_text = font_arial30.render("[ESC] Quit", True, WHITE)
 
-    boid_count = 0
+    boid_count = 0 # number of boids
     
-    flock_params = FlockParams(50, 100, 200, 1, 1, 1)
+    flock_params = FlockParams(50, 100, 200, 1, 1, 1) # parameters for flock calculations 
 
-    debug_boids = False
+    debug_boids = False # debug boids bool
 
-    sections = {
+    sections = { # sections dictionary
         0: { 0: {}, 1: {}, 2: {} },
         1: { 0: {}, 1: {}, 2: {} },
         2: { 0: {}, 1: {}, 2: {} },
@@ -405,33 +410,33 @@ def PerformanceTest(performance_test):
     }
 
     for i in range(100):
-        pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height))
-        vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
-        accel = Vec2(1,1)
+        pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height)) # randomize position
+        vel = Vec2(random.uniform(-1,1), random.uniform(-1,1)) # randomize velocity
+        accel = Vec2(1,1) # initialize acceleration
         
-        boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=True)
-        sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
-        boid_count += 1
+        boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=True) # initialize boid
+        sections[boid.section[0]][boid.section[1]][(boid.id)] = boid # initialize sections
+        boid_count += 1 # increase boid count
 
-    while performance_test:
+    while performance_test: # loop
         clock.tick(fps)
-        fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, WHITE)
-        boid_count_text = font_arial30.render("BOIDS: " + str(boid_count), True, WHITE)
+        fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, WHITE) # render fps text
+        boid_count_text = font_arial30.render("BOIDS: " + str(boid_count), True, WHITE) # render boid count text
 
-        for e in py.event.get():
-            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): 
+        for e in py.event.get(): # loop through events
+            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): # quit event
                 performance_test = False
                 sys.exit()
             
-            if e.type == py.KEYDOWN:
-                if e.key == py.K_t:
-                    pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height))
-                    vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
-                    accel = Vec2(1,1)
+            if e.type == py.KEYDOWN: # key down event
+                if e.key == py.K_t: # check key is t
+                    pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height)) # randomize pos
+                    vel = Vec2(random.uniform(-1,1), random.uniform(-1,1)) # randomize velocity
+                    accel = Vec2(1,1) # initialize acceleration
                     
-                    boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=True)
-                    sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
-                    boid_count +=1 
+                    boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=True) # initialize boid
+                    sections[boid.section[0]][boid.section[1]][(boid.id)] = boid # initialize sections
+                    boid_count +=1  # increase boid count
                 if e.key == py.K_n: # check key is n
                     debug_boids = not debug_boids # set debug boids to the opposite of what it is
                 if e.key == py.K_m: # check key is m
@@ -439,19 +444,19 @@ def PerformanceTest(performance_test):
 
         window.fill(DARKGRAY) # fill window with color
         
-        for x in sections.keys():
-            for y in sections[x].keys():
-                for boid in sections[x][y].values():
+        for x in sections.keys(): # loop through rows
+            for y in sections[x].keys(): # loop through columns
+                for boid in sections[x][y].values(): # loop through boids in section
                     #Add forces to boid
                     boid.Flock(sections[x][y], flock_params = flock_params)
                     #Update
                     boid.Update(1)
                     sections = boid.UpdateSections(sections)
                     #Draw
-                    if debug_boids:
-                        direction_ray = Ray(boid.pos, boid.vel, 15)
-                        direction_ray.DebugDraw(window)
-                    boid.Draw(window)
+                    if debug_boids: # check if debugging
+                        direction_ray = Ray(boid.pos, boid.vel, 15) # create ray
+                        direction_ray.DebugDraw(window) # draw debug ray
+                    boid.Draw(window) # draw boid
 
         # Draw text
         window.blit(fps_text, (100, 50))
@@ -460,6 +465,7 @@ def PerformanceTest(performance_test):
         window.blit(debug_text, (100, 200))
         window.blit(menu_text, (100, 250))
         window.blit(quit_text, (100, 300))
+        # Update
         py.display.update()
 
 

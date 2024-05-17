@@ -1,22 +1,22 @@
 
 import pygame as py
 from pygame import Vector2 as Vec2
-import numpy as np
 from colors import *
 
-class Ray:
-    def __init__(this, pos, direction, distance):
+class Ray: # simple ray class
+    def __init__(this, pos, direction, distance): # initialize ray
         this.pos = pos
         this.direction = direction
         this.distance = distance
 
-    def DebugDraw(this, window, color=RED, width=1):
+    def DebugDraw(this, window, color=RED, width=1): # draw ray
         py.draw.line(window, color,
                      (this.pos.x, this.pos.y), 
                      (this.direction.x * this.distance + this.pos.x, this.direction.y * this.distance + this.pos.y),
                      width)
 
 # Fast method for getting line intersections :D
+# Ended up not using, but will keep here cause I think it's valuable to have
 # Gavin. “How Do You Detect Where Two Line Segments Intersect?” Stack Overflow, 28 Dec. 2009, stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect. 
 def GetLineIntersection(p1, p2, p3, p4):
     s1 = Vec2(0,0)

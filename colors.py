@@ -1,4 +1,4 @@
-#Colors to be used in boids game (RGB)
+#Colors to be used (RGB)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 LIGHTGRAY = (145, 145, 145)
