@@ -39,14 +39,17 @@ clock = py.time.Clock()
 fps = 60
 
 font_arial20 = py.font.SysFont('Arial', 20)
+font_bahnschrift25 = py.font.SysFont('Bahnschrift', 25)
+font_bahnschriftsb30 = py.font.SysFont('Bahnschrift', 30)
 font_arial30 = py.font.SysFont('Arial', 30)
 font_arial80 = py.font.SysFont('Arial', 80)
 
 ## MAIN GAME
 
 def MainGame(game):
-    time_scale = 1  
+    time_scale = 1 # used for controlling how fast the speed at which the game updates, useful for freezing the game (pausing or game over)
 
+    # LOAD IN ALL IMAGES (some may not be used)
     circle_15px_img = py.image.load('resources/circle_15px.png').convert_alpha()
     circle_50px_img = py.image.load('resources/circle_50px.png').convert_alpha()
     circle_100px_img = py.image.load('resources/circle_100px.png').convert_alpha()
@@ -57,22 +60,20 @@ def MainGame(game):
     ducky_large_img = py.image.load('resources/ducky_large.png').convert_alpha()
     map_img = py.image.load('resources/map.jpg').convert_alpha()
 
-    sploder_img = circle_50px_img
-    boss_img = circle_50px_img
-
-    map = [
+    map = [ # all rects for the map
         py.Rect(-2000, -2000, 4000, 4000),
     ]
 
-    debug_colliders = False
-    colliders = [
+    debug_colliders = False # debug option for colliders
+    colliders = [ # all rects for colliders
         py.Rect(-2000, -2600, 4000, 1000), # top
         py.Rect(-2000, 1600, 4000, 1000), # bottom
         py.Rect(-2600, -2000, 1000, 4000), # left
         py.Rect(1600, -2000, 1000, 4000), # right
     ]
-
-    map_offset = [1000, 0]
+    
+    # offset the map by a certain amount
+    map_offset = [1000, 0] 
     for bg in map:
         bg.x += map_offset[0]
         bg.y += map_offset[1]
@@ -80,70 +81,90 @@ def MainGame(game):
         col.x += map_offset[0]
         col.y += map_offset[1]
 
+    # flock parameters for flock calculations
     flock_params = FlockParams(separation_distance = 50, alignment_distance = 100, cohesion_distance = 200, separation_factor = 1, alignment_factor = 1, cohesion_factor = 1)
 
+    # boids and removed boids lists
     boids = []
     removed_boids = []
 
+    # initialize main flock
     flock = Flock(Vec2(screen_width/2, screen_height/2), Vec2(0,0), 10, range=200, health=25, img=ducky_large_img)
 
+    # spawn ducklings
     SpawnDucklingsRandom(boids, flock, ducky_small_img)
 
+    # initialize enemies
     enemies = []
     sploder_enemy = EnemyParams("sploder", circle_50px_img, circle_50px_img, circle_50px_img, attack_range=75, speed=4, health=1, damage=5, value=25)
     boss_enemy = EnemyParams("boss", circle_100px_img, circle_100px_img, circle_100px_img, attack_range = 200, speed=1, health=15, damage=20, value=100)
 
+    # initialize waves
+    total_waves = 0
     current_wave = 0
     wave_countdown = 300
     waves = [
+        (0, sploder_enemy),
         (3, sploder_enemy), (5, sploder_enemy), (3, sploder_enemy), (7, sploder_enemy), (1, boss_enemy),
         (5, sploder_enemy), (2, sploder_enemy), (2, sploder_enemy), (6, sploder_enemy), (1, boss_enemy),
     ]
 
+    # call flock draw function to avoid errors
     flock.Draw(window)
     
+    # Spawn first wave
     SpawnWave(enemies, waves[current_wave][0], waves[current_wave][1])
 
+    # UPGRADES
     launch_upgrade = False
     dash_upgrade = False
 
-    launch_duckling_text = font_arial20.render("LEFT MOUSE - LAUNCH DUCKLING", True, BLACK)
-    reload_input_text = font_arial20.render("R - RECALL DUCKLINGS (MUST HAVE 0)", True, BLACK)
-    dash_input_text = font_arial20.render("SPACE - DASH", True, BLACK)
+    # CONTROLS TEXT
+    controls_text = font_bahnschriftsb30.render("CONTROLS", True, WHITE)
+    launch_duckling_text = font_bahnschrift25.render("[LMB] Launch Duckling", True, WHITE)
+    reload_input_text = font_bahnschrift25.render("[R] Recall Ducklings (Must Have 0)", True, WHITE)
+    dash_input_text = font_bahnschrift25.render("[SPACE] Dash", True, WHITE)
+    menu_text = font_bahnschrift25.render("[M] Menu", True, WHITE)
+    quit_text = font_bahnschrift25.render("[ESC] Quit", True, WHITE)
 
-    while game:
+    # OTHER TEXT
+    game_over_text = font_arial80.render("GAME OVER", True, WHITE) # render Game Over text in white
+    paused_text = font_arial80.render("PAUSED", True, WHITE) # renders paused text
+    launch_upgrade_text = font_arial80.render("DUCKLING UPGRADE", True, WHITE) # launch upgrade text
+    dash_upgrade_text = font_arial80.render("DASH UPGRADE", True, WHITE) # dash upgrade text
+
+    while game: # main loop
         clock.tick(fps)
 
+        # freeze game if player is dead
         if flock.health <= 0:
             time_scale = 0
-            game_over_text = font_arial80.render("GAME OVER", True, WHITE) # render Game Over text in white
 
         # RENDER TEXT
-        fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, BLACK) # renders fps text
-        flock_health_text = font_arial30.render("HP: " + str(flock.health), True, BLACK) # renders health text
-        flock_num_coins_text = font_arial30.render("Coins: " + str(flock.coins), True, BLACK) # renders num coins text
-        paused_text = font_arial80.render("PAUSED", True, WHITE) # renders paused text
+        fps_text = font_bahnschrift25.render("FPS: " + str(round(clock.get_fps())), True, WHITE) # renders fps text
+        wave_text = font_bahnschrift25.render("Wave: " + str(total_waves), True, WHITE) # renders current wave text
+        flock_health_text = font_bahnschrift25.render("Health: " + str(flock.health), True, WHITE) # renders health text
+        flock_num_coins_text = font_bahnschrift25.render("Coins: " + str(flock.coins), True, WHITE) # renders num coins text
 
         flock.num_boids = len(boids)
-        flock_boid_num_text = font_arial30.render("Ducklings: " + str(flock.num_boids), True, BLACK) # renders num ducklings text
+        flock_boid_num_text = font_bahnschrift25.render("Ducklings: " + str(flock.num_boids), True, WHITE) # renders num ducklings text
 
         # WAVE COUNTDOWN TEXT
         if len(enemies) == 0: # check if enemies in current wave are defeated
             launch_upgrade = False
             dash_upgrade = False
-            if current_wave == 4:
+            if current_wave == 4: # current wave is 4
                 launch_upgrade = True
-                flock.launch_cooldown -= 3
-                launch_upgrade_text = font_arial80.render("DUCKLING UPGRADE", True, WHITE) # launch upgrade text
-            if current_wave == 9:
+                flock.launch_cooldown -= 3 # increase "fire rate"
+            if current_wave == 9: # current wave is 9
                 dash_upgrade = True
-                flock.dash_cooldown -= 3
-                dash_upgrade_text = font_arial80.render("DASH UPGRADE", True, WHITE) # dash upgrade text
+                flock.dash_cooldown -= 3 # decrease dash cooldown
 
             wave_countdown -= 1 * time_scale # start counting down each frame (millisecond)
             wave_countdown_text = font_arial80.render(str(round(wave_countdown / 60)), True, WHITE) # render the text in seconds, and round it
             if wave_countdown <= 0: # check if countdown is over
                 current_wave += 1 # increment wave
+                total_waves += 1 # increase total waves
                 if (current_wave > len(waves) - 1): # check if current wave is out of range of the waves list
                     current_wave = 0 # loop current wave back around to beginning
                 SpawnWave(enemies, waves[current_wave][0], waves[current_wave][1]) # spawn a new wave of enemies based on the waves list
@@ -165,7 +186,7 @@ def MainGame(game):
                 movement_vector.x += 1 # move right
         
         for e in py.event.get(): # get events
-            if e.type == py.QUIT: # quit event
+            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): # quit event
                 game = False # game boolean false
                 sys.exit() # exit game
 
@@ -188,6 +209,8 @@ def MainGame(game):
                 if key == py.K_TAB and flock.health > 0: # check key is tab
                     if time_scale == 1: time_scale = 0 # pause game
                     elif time_scale == 0: time_scale = 1 # unpause game
+                if key == py.K_m: # check key is m
+                    Menu(True, False, False) # go back to menu
                     
             if e.type == py.KEYUP: # key up
                 key = e.key # get key
@@ -197,53 +220,53 @@ def MainGame(game):
         # -- DRAW --
         window.fill((50, 137, 44)) # fill window with color
 
-        rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y)) * time_scale
+        rounded_flock_vel = Vec2(round(flock.vel.x), round(flock.vel.y)) * time_scale # round flock velocity for smooth object movement
 
-        for bg in map:
-            bg.x -= rounded_flock_vel.x
-            bg.y -= rounded_flock_vel.y
+        for bg in map: # get all backgrounds, this was more relevant when I had a whole map going on, but I decided it would be best if I focused on other aspects of the game
+            bg.x -= rounded_flock_vel.x # move background position based on flock movement
+            bg.y -= rounded_flock_vel.y # move background position based on flock movement
 
             if bg.x + bg.w >= 0 and bg.y + bg.h >= 0: # only render the backgrounds on screen to save performance
-                window.blit(map_img, (bg.x, bg.y))
+                window.blit(map_img, (bg.x, bg.y)) # draw background
         
 
-        active_cols = []
-        for col in colliders:
-            col.x -= rounded_flock_vel.x
-            col.y -= rounded_flock_vel.y
+        active_cols = [] # list for only the active colliders so we don't test them all if we don't need to
+        for col in colliders: # loop through colliders
+            col.x -= rounded_flock_vel.x # move background position based on flock movement
+            col.y -= rounded_flock_vel.y # move background position based on flock movement
 
             if col.x + col.w >= 0 and col.y + col.h >= 0: # only use the colliders on screen to save performance
-                active_cols.append(col)
-                if debug_colliders:
-                    py.draw.rect(window, RED, col, 10)
+                active_cols.append(col) # append to active collider list
+                if debug_colliders: # check if debugging
+                    py.draw.rect(window, RED, col, 10) # draw debug collider rects
 
-        enemy_rects = []
-        removed_enemies = []
-        for enemy in enemies:
-            enemy.Separate(enemies)
-            enemy.CheckCollisions(active_cols)
-            enemy.Update(time_scale, flock)
+        enemy_rects = [] # enemy rects
+        removed_enemies = [] # enemies to be removed
+        for enemy in enemies: # loop through enemies
+            enemy.Separate(enemies) # separate enemies from eachother
+            enemy.CheckCollisions(active_cols) # check enemy collisions with walls
+            enemy.Update(time_scale, flock) # update enemy physics and positions
 
-            if enemy.despawn_timer <= 0:
-                removed_enemies.append(enemy)
+            if enemy.despawn_timer <= 0: # check if enemy is dead
+                removed_enemies.append(enemy) # add to remove list
             
-            if enemy.can_damage:
-                enemy_rects.append(enemy.rect)
-            enemy.Draw(window)
+            if enemy.can_damage: # check if enemy can damage
+                enemy_rects.append(enemy.rect) # append to rect list. If an enemy is able to damage then it should be tested
+            enemy.Draw(window) # draw enemy
 
         for enemy in removed_enemies: # loop through removed enemies
             if len(enemies) > 0: enemies.remove(enemy) # remove enemy from array
 
-        for boid in boids:
+        for boid in boids: # loop through boids
             #Add forces to boid
-            if Normalize(flock.pos - boid.pos) < flock.range:
-                boid.max_speed = 6
-                boid.alignment_enabled = False
-            else:
-                boid.max_speed = 8
-                boid.alignment_enabled = True
+            if Normalize(flock.pos - boid.pos) < flock.range: # check if boid is near flock
+                boid.max_speed = 6 # make boid max speed normal
+                boid.alignment_enabled = False # disable alignment
+            else: # boid away from flock
+                boid.max_speed = 8 # speed up boid to catch up with flock
+                boid.alignment_enabled = True # enable alignment
                 
-            boid.Flock(boids, flock=flock, flock_params=flock_params)
+            boid.Flock(boids, flock=flock, flock_params=flock_params) # perform flocking calculations
 
             #Update Boid
             boid.Update(time_scale, flock)
@@ -253,7 +276,7 @@ def MainGame(game):
             #direction_ray.DebugDraw(window)
             boid.Draw(window)
 
-        for boid in removed_boids:
+        for boid in removed_boids: # loop through removed boids
             boid_col_enemy_index = boid.CheckCollisions(enemy_rects) # get collision index
             if boid_col_enemy_index != -1: # check if there is a collision
                 enemies[boid_col_enemy_index].health -= flock.boid_damage # decrease enemy health
@@ -271,38 +294,41 @@ def MainGame(game):
         flock.AddForce(movement_vector * flock.max_speed) # add movement force to flock
         
         # COLLISIONS
-        flock.CheckWallCollisions(active_cols)
-        if len(enemy_rects) > 0:
-            flock_col_enemy = flock.CheckCollisions(enemy_rects)
-            if flock_col_enemy != -1:
-                if enemies[flock_col_enemy] in enemies:
-                    if enemies[flock_col_enemy].can_damage and flock.health > 0:
-                        enemies[flock_col_enemy].can_damage = False
-                        flock.health -= enemies[flock_col_enemy].damage
-                        if flock.health <= 0:
-                            flock.health = 0
-                            print("DEFEAT")
+        flock.CheckWallCollisions(active_cols) # check flock collision with walls
+        if len(enemy_rects) > 0: # check has enemies
+            flock_col_enemy = flock.CheckCollisions(enemy_rects) # check flock collision with enemies
+            if flock_col_enemy != -1: # has collision
+                if enemies[flock_col_enemy] in enemies: # make sure enemy still in enemies
+                    if enemies[flock_col_enemy].can_damage and flock.health > 0: # enemy can damage and flock still alive
+                        enemies[flock_col_enemy].can_damage = False # enemy can no longer damage
+                        flock.health -= enemies[flock_col_enemy].damage # damage flock
+                        if flock.health <= 0: # flock health at dead level
+                            flock.health = 0 # flock dead
         
         # UPDATE AND DRAW
         flock.Update(time_scale)
         flock.Draw(window)
 
-        # DRAW TEXT
+        # DRAW TEXT ---
         window.blit(fps_text, (100, 50))
-        window.blit(flock_health_text, (100, 100))
-        window.blit(flock_boid_num_text, (100, 150))
-        window.blit(flock_num_coins_text, (100,200))
-        window.blit(launch_duckling_text, (1200, 50))
-        window.blit(reload_input_text, (1200, 80))
-        window.blit(dash_input_text, (1200, 110))
-        if wave_countdown < 300:
+        window.blit(wave_text, (100, 80))
+        window.blit(flock_health_text, (100, 110))
+        window.blit(flock_boid_num_text, (100, 140))
+        window.blit(flock_num_coins_text, (100,170))
+        window.blit(controls_text, (100, 660))
+        window.blit(launch_duckling_text, (100, 700))
+        window.blit(reload_input_text, (100, 730))
+        window.blit(dash_input_text, (100, 760))
+        window.blit(menu_text, (100, 790))
+        window.blit(quit_text, (100, 820))
+        if wave_countdown < 300: # wave countdown is happening
             window.blit(wave_countdown_text, (screen_width/2, 100))
             if launch_upgrade:
                 window.blit(launch_upgrade_text, (screen_width/2 - 200, screen_height/2 - 40))
             if dash_upgrade:
                 window.blit(dash_upgrade_text, (screen_width/2 - 150, screen_height/2 - 40))
 
-        if time_scale == 0:
+        if time_scale == 0: # paused or game over
             if flock.health > 0:
                 window.blit(paused_text, (screen_width/2 - 125, screen_height/2 - 40))
             else:
@@ -329,7 +355,7 @@ def Menu(menu, game, performance_test):
         window.fill(WHITE)
 
         for e in py.event.get():
-            if e.type == py.QUIT: 
+            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): 
                 menu = False
                 sys.exit()
 
@@ -359,10 +385,17 @@ def Menu(menu, game, performance_test):
 ### PERFORMANCE TEST FUNCTION
 def PerformanceTest(performance_test):
     blue_arrow_img = py.image.load('resources/blue_arrow.png').convert_alpha()
-    add_boid_text = font_arial30.render("Press 'T' to add a boid", True, WHITE)
+
+    add_boid_text = font_arial30.render("[T] Add Boid", True, WHITE)
+    debug_text = font_arial30.render("[N] Debug Boids", True, WHITE)
+    menu_text = font_arial30.render("[M] Return to Menu", True, WHITE)
+    quit_text = font_arial30.render("[ESC] Quit", True, WHITE)
+
     boid_count = 0
     
     flock_params = FlockParams(50, 100, 200, 1, 1, 1)
+
+    debug_boids = False
 
     sections = {
         0: { 0: {}, 1: {}, 2: {} },
@@ -380,34 +413,31 @@ def PerformanceTest(performance_test):
         sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
         boid_count += 1
 
-        t_down = False
-
     while performance_test:
         clock.tick(fps)
         fps_text = font_arial30.render("FPS: " + str(round(clock.get_fps())), True, WHITE)
         boid_count_text = font_arial30.render("BOIDS: " + str(boid_count), True, WHITE)
 
         for e in py.event.get():
-            if e.type == py.QUIT: 
+            if e.type == py.QUIT or (e.type == py.KEYDOWN and e.key == py.K_ESCAPE): 
                 performance_test = False
                 sys.exit()
             
             if e.type == py.KEYDOWN:
-                if e.key == py.K_t and t_down == False:
-                    t_down = True
+                if e.key == py.K_t:
                     pos = Vec2(random.randint(0,screen_width), random.randint(0,screen_height))
                     vel = Vec2(random.uniform(-1,1), random.uniform(-1,1))
                     accel = Vec2(1,1)
                     
-                    boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=False)
+                    boid = Boid(pos, vel, accel, blue_arrow_img, bound_to_window=True)
                     sections[boid.section[0]][boid.section[1]][(boid.id)] = boid
                     boid_count +=1 
-            
-            if e.type == py.KEYUP:
-                if e.key == py.K_t:
-                    t_down = False
+                if e.key == py.K_n: # check key is n
+                    debug_boids = not debug_boids # set debug boids to the opposite of what it is
+                if e.key == py.K_m: # check key is m
+                    Menu(True, False, False) # go back to menu
 
-        window.fill(DARKGRAY)
+        window.fill(DARKGRAY) # fill window with color
         
         for x in sections.keys():
             for y in sections[x].keys():
@@ -418,14 +448,18 @@ def PerformanceTest(performance_test):
                     boid.Update(1)
                     sections = boid.UpdateSections(sections)
                     #Draw
-                    #direction_ray = SimpleRay(boid.pos, boid.vel, 15)
-                    #direction_ray.Draw(window)
-                    boid_rect = boid.Draw(window)
+                    if debug_boids:
+                        direction_ray = Ray(boid.pos, boid.vel, 15)
+                        direction_ray.DebugDraw(window)
+                    boid.Draw(window)
 
         # Draw text
         window.blit(fps_text, (100, 50))
         window.blit(boid_count_text, (100, 100))
         window.blit(add_boid_text, (100, 150))
+        window.blit(debug_text, (100, 200))
+        window.blit(menu_text, (100, 250))
+        window.blit(quit_text, (100, 300))
         py.display.update()
 
 
