@@ -54,7 +54,9 @@ class Boid: # Boid class
     def CheckCollisions(this, colliders):
         collide_index = this.rect.collidelist(colliders)
         return collide_index
-
+    
+    # Credit to The Coding Train for the foundation of the implementation
+    # The Coding Train. “Coding Challenge #124: Flocking Simulation.” YouTube, 11 Dec. 2018, www.youtube.com/watch?v=mhjuuHl6qHM.
     def Flock(this, boids, flock=None, flock_params = FlockParams()): # calculate flock forces function
         alignment_force = Vec2(0,0) # alignment force vector
         cohesion_force = Vec2(0,0) # cohesion force vector
